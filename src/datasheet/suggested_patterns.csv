@@ -1,0 +1,81 @@
+Intent,Type,PatternCandidate
+gangguan jaringan,unigram,internet
+gangguan jaringan,unigram,tidak
+gangguan jaringan,unigram,akhir
+gangguan jaringan,unigram,modem
+gangguan jaringan,unigram,sejak
+gangguan jaringan,unigram,tiba
+gangguan jaringan,unigram,konek
+gangguan jaringan,unigram,ke
+gangguan jaringan,unigram,putus
+gangguan jaringan,unigram,koneksi
+gangguan jaringan,bigram,modem tidak
+gangguan jaringan,bigram,tidak konek
+gangguan jaringan,bigram,konek ke
+gangguan jaringan,bigram,ke internet
+gangguan jaringan,bigram,sinyal tidak
+gangguan jaringan,bigram,tidak stabil
+gangguan jaringan,bigram,stabil akhir
+gangguan jaringan,bigram,akhir akhir
+gangguan jaringan,bigram,akhir ini
+gangguan jaringan,bigram,internet mati
+lainnya,unigram,layanan
+lainnya,unigram,hubungi
+lainnya,unigram,kantor
+lainnya,unigram,bagaimana
+lainnya,unigram,cara
+lainnya,unigram,bisakah
+lainnya,unigram,cs
+lainnya,unigram,langsung
+lainnya,unigram,saya
+lainnya,unigram,butuh
+lainnya,bigram,bagaimana cara
+lainnya,bigram,bisakah hubungi
+lainnya,bigram,hubungi cs
+lainnya,bigram,cs langsung
+lainnya,bigram,saya butuh
+lainnya,bigram,butuh bantuan
+lainnya,bigram,bantuan lainnya
+lainnya,bigram,lokasi kantor
+lainnya,bigram,jam operasional
+lainnya,bigram,operasional kantor
+info paket,unigram,paket
+info paket,unigram,ada
+info paket,unigram,apa
+info paket,unigram,yang
+info paket,unigram,paling
+info paket,unigram,murah
+info paket,unigram,berapa
+info paket,unigram,apakah
+info paket,unigram,unlimited
+info paket,unigram,promo
+info paket,bigram,ada paket
+info paket,bigram,paket yang
+info paket,bigram,yang paling
+info paket,bigram,paling murah
+info paket,bigram,murah apa
+info paket,bigram,apakah ada
+info paket,bigram,paket unlimited
+info paket,bigram,bagaimana cara
+info paket,bigram,cara downgrade
+info paket,bigram,downgrade paket
+cek tagihan,unigram,tagihan
+cek tagihan,unigram,saya
+cek tagihan,unigram,bagaimana
+cek tagihan,unigram,cara
+cek tagihan,unigram,cek
+cek tagihan,unigram,invoice
+cek tagihan,unigram,bulan
+cek tagihan,unigram,belum
+cek tagihan,unigram,berapa
+cek tagihan,unigram,lalu
+cek tagihan,bigram,bagaimana cara
+cek tagihan,bigram,cara cek
+cek tagihan,bigram,cek invoice
+cek tagihan,bigram,tagihan bulan
+cek tagihan,bigram,tagihan saya
+cek tagihan,bigram,bulan lalu
+cek tagihan,bigram,lalu belum
+cek tagihan,bigram,belum terlihat
+cek tagihan,bigram,saya sudah
+cek tagihan,bigram,sudah bayar

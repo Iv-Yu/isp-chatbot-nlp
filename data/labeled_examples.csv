@@ -1,0 +1,9 @@
+message,intent,status,response
+"kak pembayarannya gimana ya",pembayaran,AUTO_RESPONSE,"Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami."
+"kak lemot",gangguan_lemot_umum,TO_NOC,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami?"
+"buat buka tiktok lemot",gangguan_umum,TO_NOC,"Mohon kirim ID Pelanggan dan foto lampu modem/ONT untuk pengecekan."
+"daerah Rejomulyo bisa dipasang kak?",cek_coverage,TO_CS,"Untuk cek ketersediaan jaringan, mohon kirim nama daerah lengkap atau share lokasi."
+"saya mau berhenti langganan",berhenti_langganan,TO_CS,"Untuk proses pemutusan layanan, kirim ID Pelanggan dan nomor WA aktif."
+"ganti password wifi gimana caranya",ganti_password_wifi,TO_CS,"Untuk ganti password WiFi, ikuti panduan di https://pendik.id/panduan"
+"paket 30 mbps berapa ya",info_paket,AUTO_RESPONSE,"Berikut gambaran paket internet kami (30 Mbps ke atas)."
+"kabel putus di depan rumah",kabel_putus,TO_NOC,"Mohon kirim lokasi lengkap dan foto kondisi kabel."

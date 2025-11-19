@@ -1,0 +1,67 @@
+Text_Pertanyaan,Jumlah_kata,Kata_Gangguan,Kata_Tagihan,Kata_Paket,Waktu_Pengiriman,Label_Intent
+Internet mati total sejak sore,5,1,0,0,Pagi,Gangguan Jaringan
+Saya butuh bantuan lainnya,4,0,0,0,Pagi,Lainnya
+Modem tidak konek ke internet,5,1,0,0,Malam,Gangguan Jaringan
+Bagaimana cara downgrade paket,4,0,0,1,Pagi,Info Paket
+Bagaimana cara cek invoice,4,0,1,0,Siang,Cek Tagihan
+Paket yang paling murah apa,5,0,0,1,Pagi,Info Paket
+Modem tidak konek ke internet,5,1,0,0,Pagi,Gangguan Jaringan
+Lokasi kantor pusat dimana,4,0,0,0,Pagi,Lainnya
+Kecepatan paket bisnis berapa,4,0,0,1,Pagi,Info Paket
+Jaringan putus tiba tiba,4,1,0,0,Malam,Gangguan Jaringan
+Bagaimana cara cek invoice,4,0,1,0,Pagi,Cek Tagihan
+Apakah ada paket unlimited,4,0,0,1,Malam,Info Paket
+Saya butuh bantuan lainnya,4,0,0,0,Siang,Lainnya
+Internet mati total sejak sore,5,1,0,0,Siang,Gangguan Jaringan
+Jam operasional kantor layanan,4,0,0,0,Malam,Lainnya
+Paket 50 Mbps harganya berapa,5,0,0,1,Siang,Info Paket
+Bagaimana cara pindah alamat layanan,5,0,0,0,Malam,Lainnya
+Bisakah hubungi CS langsung,4,0,0,0,Malam,Lainnya
+Kenapa lampu merah di modem menyala,6,1,0,0,Malam,Gangguan Jaringan
+Koneksi wifi sangat lambat,4,1,0,0,Malam,Gangguan Jaringan
+Ada promo internet bulan ini,5,0,0,1,Siang,Info Paket
+Apa ada paket khusus mahasiswa,5,0,0,1,Siang,Info Paket
+Koneksi wifi sangat lambat,4,1,0,0,Siang,Gangguan Jaringan
+Paket 50 Mbps harganya berapa,5,0,0,1,Pagi,Info Paket
+Sinyal tidak stabil akhir akhir ini,6,1,0,0,Pagi,Gangguan Jaringan
+Paket yang paling murah apa,5,0,0,1,Siang,Info Paket
+Tagihan bulan lalu belum terlihat,5,0,1,0,Siang,Cek Tagihan
+Bagaimana cara cek invoice,4,0,1,0,Malam,Cek Tagihan
+Apakah ada layanan pemasangan baru,5,0,0,0,Siang,Lainnya
+Internet saya lemot sekali sejak pagi,6,1,0,0,Pagi,Gangguan Jaringan
+Jam operasional kantor layanan,4,0,0,0,Pagi,Lainnya
+Bagaimana cara downgrade paket,4,0,0,1,Malam,Info Paket
+Bagaimana cara hubungi teknisi,4,0,0,0,Pagi,Lainnya
+Sering disconnect saat main game,5,1,0,0,Siang,Gangguan Jaringan
+Jaringan putus tiba tiba,4,1,0,0,Siang,Gangguan Jaringan
+Sering disconnect saat main game,5,1,0,0,Malam,Gangguan Jaringan
+Bagaimana cara hubungi teknisi,4,0,0,0,Siang,Lainnya
+Apakah ada paket unlimited,4,0,0,1,Siang,Info Paket
+Kenapa lampu merah di modem menyala,6,1,0,0,Siang,Gangguan Jaringan
+Saya sudah bayar tapi masih terblokir,6,0,1,0,Malam,Cek Tagihan
+Ada promo internet bulan ini,5,0,0,1,Malam,Info Paket
+Apakah ada layanan pemasangan baru,5,0,0,0,Pagi,Lainnya
+Apakah ada denda keterlambatan,4,1,1,0,Malam,Cek Tagihan
+Sinyal tidak stabil akhir akhir ini,6,1,0,0,Siang,Gangguan Jaringan
+Apa ada paket khusus mahasiswa,5,0,0,1,Malam,Info Paket
+Berapa nominal tagihan saya sekarang,5,0,1,0,Malam,Cek Tagihan
+Paket yang paling murah apa,5,0,0,1,Malam,Info Paket
+Saya ingin upgrade ke paket lebih cepat,7,0,0,1,Siang,Info Paket
+Tagihan kemarin belum masuk,4,0,1,0,Siang,Cek Tagihan
+Apakah ada paket unlimited,4,0,0,1,Pagi,Info Paket
+Koneksi sering putus sambung,4,1,0,0,Malam,Gangguan Jaringan
+Tagihan bulan ini berapa ya,5,0,1,0,Pagi,Cek Tagihan
+Promo paket akhir tahun ada tidak,6,0,0,1,Pagi,Info Paket
+Streaming jadi buffering terus,4,1,0,0,Siang,Gangguan Jaringan
+Sinyal tidak stabil akhir akhir ini,6,1,0,0,Malam,Gangguan Jaringan
+Tagihan bulan lalu belum terlihat,5,0,1,0,Pagi,Cek Tagihan
+Dimana lokasi kantor cabang,4,0,0,0,Malam,Lainnya
+Bisakah hubungi CS langsung,4,0,0,0,Siang,Lainnya
+Streaming jadi buffering terus,4,1,0,0,Malam,Gangguan Jaringan
+Internet saya lemot sekali sejak pagi,6,1,0,0,Siang,Gangguan Jaringan
+Apakah ada denda keterlambatan,4,1,1,0,Siang,Cek Tagihan
+Modem tidak konek ke internet,5,1,0,0,Siang,Gangguan Jaringan
+Bisakah hubungi CS langsung,4,0,0,0,Pagi,Lainnya
+Saya sudah bayar tapi masih terblokir,6,0,1,0,Pagi,Cek Tagihan
+Berapa nominal tagihan saya sekarang,5,0,1,0,Siang,Cek Tagihan
+Bisakah kirim bukti tagihan saya,5,0,1,0,Pagi,Cek Tagihan

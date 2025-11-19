@@ -1,0 +1,67 @@
+Pertanyaan,Label_Asli,Prediksi,Benar?,Score
+Internet mati total sejak sore,gangguan jaringan,gangguan umum,False,2
+Saya butuh bantuan lainnya,lainnya,gangguan umum,False,3
+Modem tidak konek ke internet,gangguan jaringan,gangguan umum,False,2
+Bagaimana cara downgrade paket,info paket,pembayaran,False,1
+Bagaimana cara cek invoice,cek tagihan,pembayaran,False,1
+Paket yang paling murah apa,info paket,opsi layanan,False,3
+Modem tidak konek ke internet,gangguan jaringan,gangguan umum,False,2
+Lokasi kantor pusat dimana,lainnya,pembayaran,False,1
+Kecepatan paket bisnis berapa,info paket,opsi layanan,False,3
+Jaringan putus tiba tiba,gangguan jaringan,kabel putus,False,4
+Bagaimana cara cek invoice,cek tagihan,pembayaran,False,1
+Apakah ada paket unlimited,info paket,opsi layanan,False,3
+Saya butuh bantuan lainnya,lainnya,gangguan umum,False,3
+Internet mati total sejak sore,gangguan jaringan,gangguan umum,False,2
+Jam operasional kantor layanan,lainnya,fallback,False,0
+Paket 50 Mbps harganya berapa,info paket,opsi layanan,False,3
+Bagaimana cara pindah alamat layanan,lainnya,pembayaran,False,1
+Bisakah hubungi CS langsung,lainnya,opsi layanan,False,3
+Kenapa lampu merah di modem menyala,gangguan jaringan,opsi layanan,False,3
+Koneksi wifi sangat lambat,gangguan jaringan,gangguan umum,False,3
+Ada promo internet bulan ini,info paket,gangguan umum,False,3
+Apa ada paket khusus mahasiswa,info paket,opsi layanan,False,3
+Koneksi wifi sangat lambat,gangguan jaringan,gangguan umum,False,3
+Paket 50 Mbps harganya berapa,info paket,opsi layanan,False,3
+Sinyal tidak stabil akhir akhir ini,gangguan jaringan,cek tagihan,False,1
+Paket yang paling murah apa,info paket,opsi layanan,False,3
+Tagihan bulan lalu belum terlihat,cek tagihan,cek tagihan,True,5
+Bagaimana cara cek invoice,cek tagihan,pembayaran,False,1
+Apakah ada layanan pemasangan baru,lainnya,opsi layanan,False,3
+Internet saya lemot sekali sejak pagi,gangguan jaringan,gangguan umum,False,5
+Jam operasional kantor layanan,lainnya,fallback,False,0
+Bagaimana cara downgrade paket,info paket,pembayaran,False,1
+Bagaimana cara hubungi teknisi,lainnya,pembayaran,False,1
+Sering disconnect saat main game,gangguan jaringan,gangguan umum,False,1
+Jaringan putus tiba tiba,gangguan jaringan,kabel putus,False,4
+Sering disconnect saat main game,gangguan jaringan,gangguan umum,False,1
+Bagaimana cara hubungi teknisi,lainnya,pembayaran,False,1
+Apakah ada paket unlimited,info paket,opsi layanan,False,3
+Kenapa lampu merah di modem menyala,gangguan jaringan,opsi layanan,False,3
+Saya sudah bayar tapi masih terblokir,cek tagihan,gangguan umum,False,3
+Ada promo internet bulan ini,info paket,gangguan umum,False,3
+Apakah ada layanan pemasangan baru,lainnya,opsi layanan,False,3
+Apakah ada denda keterlambatan,cek tagihan,opsi layanan,False,3
+Sinyal tidak stabil akhir akhir ini,gangguan jaringan,cek tagihan,False,1
+Apa ada paket khusus mahasiswa,info paket,opsi layanan,False,3
+Berapa nominal tagihan saya sekarang,cek tagihan,cek tagihan,True,8
+Paket yang paling murah apa,info paket,opsi layanan,False,3
+Saya ingin upgrade ke paket lebih cepat,info paket,gangguan umum,False,3
+Tagihan kemarin belum masuk,cek tagihan,cek tagihan,True,4
+Apakah ada paket unlimited,info paket,opsi layanan,False,3
+Koneksi sering putus sambung,gangguan jaringan,gangguan umum,False,5
+Tagihan bulan ini berapa ya,cek tagihan,cek tagihan,True,10
+Promo paket akhir tahun ada tidak,info paket,gangguan umum,False,1
+Streaming jadi buffering terus,gangguan jaringan,fallback,False,0
+Sinyal tidak stabil akhir akhir ini,gangguan jaringan,cek tagihan,False,1
+Tagihan bulan lalu belum terlihat,cek tagihan,cek tagihan,True,5
+Dimana lokasi kantor cabang,lainnya,pembayaran,False,1
+Bisakah hubungi CS langsung,lainnya,opsi layanan,False,3
+Streaming jadi buffering terus,gangguan jaringan,fallback,False,0
+Internet saya lemot sekali sejak pagi,gangguan jaringan,gangguan umum,False,5
+Apakah ada denda keterlambatan,cek tagihan,opsi layanan,False,3
+Modem tidak konek ke internet,gangguan jaringan,gangguan umum,False,2
+Bisakah hubungi CS langsung,lainnya,opsi layanan,False,3
+Saya sudah bayar tapi masih terblokir,cek tagihan,gangguan umum,False,3
+Berapa nominal tagihan saya sekarang,cek tagihan,cek tagihan,True,8
+Bisakah kirim bukti tagihan saya,cek tagihan,cek tagihan,True,6

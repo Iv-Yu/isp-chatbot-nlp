@@ -1,0 +1,67 @@
+Pertanyaan,Label_Asli,Prediksi,Benar?
+Internet mati total sejak sore,Gangguan Jaringan,Gangguan Umum,False
+Saya butuh bantuan lainnya,Lainnya,Gangguan Umum,False
+Modem tidak konek ke internet,Gangguan Jaringan,Gangguan Umum,False
+Bagaimana cara downgrade paket,Info Paket,Info Paket,True
+Bagaimana cara cek invoice,Cek Tagihan,Cek Tagihan,True
+Paket yang paling murah apa,Info Paket,Info Paket,True
+Modem tidak konek ke internet,Gangguan Jaringan,Gangguan Umum,False
+Lokasi kantor pusat dimana,Lainnya,Lainnya,True
+Kecepatan paket bisnis berapa,Info Paket,Info Paket,True
+Jaringan putus tiba tiba,Gangguan Jaringan,Kabel Putus,False
+Bagaimana cara cek invoice,Cek Tagihan,Cek Tagihan,True
+Apakah ada paket unlimited,Info Paket,Info Paket,True
+Saya butuh bantuan lainnya,Lainnya,Gangguan Umum,False
+Internet mati total sejak sore,Gangguan Jaringan,Gangguan Umum,False
+Jam operasional kantor layanan,Lainnya,Lainnya,True
+Paket 50 Mbps harganya berapa,Info Paket,Info Paket,True
+Bagaimana cara pindah alamat layanan,Lainnya,Lainnya,True
+Bisakah hubungi CS langsung,Lainnya,Lainnya,True
+Kenapa lampu merah di modem menyala,Gangguan Jaringan,Opsi Layanan,False
+Koneksi wifi sangat lambat,Gangguan Jaringan,Gangguan Umum,False
+Ada promo internet bulan ini,Info Paket,Gangguan Umum,False
+Apa ada paket khusus mahasiswa,Info Paket,Info Paket,True
+Koneksi wifi sangat lambat,Gangguan Jaringan,Gangguan Umum,False
+Paket 50 Mbps harganya berapa,Info Paket,Info Paket,True
+Sinyal tidak stabil akhir akhir ini,Gangguan Jaringan,Gangguan Umum,False
+Paket yang paling murah apa,Info Paket,Info Paket,True
+Tagihan bulan lalu belum terlihat,Cek Tagihan,Cek Tagihan,True
+Bagaimana cara cek invoice,Cek Tagihan,Cek Tagihan,True
+Apakah ada layanan pemasangan baru,Lainnya,Opsi Layanan,False
+Internet saya lemot sekali sejak pagi,Gangguan Jaringan,Gangguan Umum,False
+Jam operasional kantor layanan,Lainnya,Lainnya,True
+Bagaimana cara downgrade paket,Info Paket,Info Paket,True
+Bagaimana cara hubungi teknisi,Lainnya,Lainnya,True
+Sering disconnect saat main game,Gangguan Jaringan,Gangguan Umum,False
+Jaringan putus tiba tiba,Gangguan Jaringan,Kabel Putus,False
+Sering disconnect saat main game,Gangguan Jaringan,Gangguan Umum,False
+Bagaimana cara hubungi teknisi,Lainnya,Lainnya,True
+Apakah ada paket unlimited,Info Paket,Info Paket,True
+Kenapa lampu merah di modem menyala,Gangguan Jaringan,Opsi Layanan,False
+Saya sudah bayar tapi masih terblokir,Cek Tagihan,Gangguan Umum,False
+Ada promo internet bulan ini,Info Paket,Gangguan Umum,False
+Apakah ada layanan pemasangan baru,Lainnya,Opsi Layanan,False
+Apakah ada denda keterlambatan,Cek Tagihan,Opsi Layanan,False
+Sinyal tidak stabil akhir akhir ini,Gangguan Jaringan,Gangguan Umum,False
+Apa ada paket khusus mahasiswa,Info Paket,Info Paket,True
+Berapa nominal tagihan saya sekarang,Cek Tagihan,Cek Tagihan,True
+Paket yang paling murah apa,Info Paket,Info Paket,True
+Saya ingin upgrade ke paket lebih cepat,Info Paket,Info Paket,True
+Tagihan kemarin belum masuk,Cek Tagihan,Cek Tagihan,True
+Apakah ada paket unlimited,Info Paket,Info Paket,True
+Koneksi sering putus sambung,Gangguan Jaringan,Gangguan Umum,False
+Tagihan bulan ini berapa ya,Cek Tagihan,Cek Tagihan,True
+Promo paket akhir tahun ada tidak,Info Paket,Info Paket,True
+Streaming jadi buffering terus,Gangguan Jaringan,Fallback,False
+Sinyal tidak stabil akhir akhir ini,Gangguan Jaringan,Gangguan Umum,False
+Tagihan bulan lalu belum terlihat,Cek Tagihan,Cek Tagihan,True
+Dimana lokasi kantor cabang,Lainnya,Lainnya,True
+Bisakah hubungi CS langsung,Lainnya,Lainnya,True
+Streaming jadi buffering terus,Gangguan Jaringan,Fallback,False
+Internet saya lemot sekali sejak pagi,Gangguan Jaringan,Gangguan Umum,False
+Apakah ada denda keterlambatan,Cek Tagihan,Opsi Layanan,False
+Modem tidak konek ke internet,Gangguan Jaringan,Gangguan Umum,False
+Bisakah hubungi CS langsung,Lainnya,Lainnya,True
+Saya sudah bayar tapi masih terblokir,Cek Tagihan,Gangguan Umum,False
+Berapa nominal tagihan saya sekarang,Cek Tagihan,Cek Tagihan,True
+Bisakah kirim bukti tagihan saya,Cek Tagihan,Cek Tagihan,True
