@@ -1,95 +1,104 @@
+# chatbot/rule_engine.py (Final V3 - Logika yang Benar)
+
+import os
 import random
 from typing import Optional, Tuple
-
-from .nlp_processor import NLPProcessor
 from .rules import INTENT_RULES, FALLBACK_RESPONSES
 from .response_router import route_intent
+from .nlp_preprocess import preprocess
 
 
 class RuleEngine:
     def __init__(self, min_score: int = 1) -> None:
-        """min_score: minimum total score required to accept a matched intent.
-        If the best_score < min_score, engine returns fallback."""
-        self.nlp = NLPProcessor()
-        self.min_score = min_score
+        """Initialize the rule engine.
 
-    def _score_pattern(self, pattern: str, text: str) -> int:
-        pattern_norm = self.nlp.normalize(pattern)
-        text_norm = text
-
-        score = 0
-
-        if pattern_norm in text_norm:
-            score += 2
-
-        for token in pattern_norm.split():
-            if token in text_norm:
-                score += 1
-
-        return score
-
-    def detect_intent(self, user_input: str) -> Tuple[str, str]:
-        """Detect intent and return (intent_name, response_text).
-
-        This method uses `min_score` to decide whether to accept the best match
-        or return `fallback`.
+        Args:
+            min_score: minimum token-match score required to consider an intent/pattern a match.
         """
-        norm_text = self.nlp.normalize(user_input)
+        self.min_score = int(min_score)
+        self.debug = os.getenv("INTENT_DEBUG", "0") in {"1", "true", "yes"}
 
-        best_intent: Optional[str] = None
-        best_response: Optional[str] = None
-        best_score = 0
+    def _score_text(self, pattern_tokens: list[str], text_tokens: list[str]) -> int:
+        """Memberikan skor berdasarkan jumlah token yang cocok."""
+        if not pattern_tokens or not text_tokens:
+            return 0
+        
+        # Cukup hitung jumlah kata yang sama
+        return len(set(pattern_tokens) & set(text_tokens))
+
+    def detect_with_response(self, user_input: str) -> Tuple[str, Optional[str], str]:
+        """
+        Mendeteksi intent dan respons dengan logika 2-langkah yang benar.
+        1. Cari Intent dengan skor tertinggi.
+        2. Di dalam Intent tersebut, cari Pola dengan skor tertinggi untuk mendapatkan Respons.
+        """
+        processed_tokens = preprocess(user_input)
+        if not processed_tokens:
+            return "fallback", random.choice(FALLBACK_RESPONSES), "TO_CS"
+
+        if self.debug:
+            print(f"[INTENT_DEBUG] user_input={user_input!r}")
+            print(f"[INTENT_DEBUG] processed_tokens={processed_tokens}")
+
+        # --- Langkah 1: Temukan Intent dengan Skor Tertinggi ---
+        best_intent_rule = None
+        highest_intent_score = 0
 
         for rule in INTENT_RULES:
-            # Use the best single-pattern match for each rule instead of summing
-            # across all patterns. Summing can inflate scores when many patterns
-            # share common stopwords; using max(pattern_score) is more robust.
-            pattern_scores = [self._score_pattern(p, norm_text) for p in rule["patterns"]]
-            total_score = max(pattern_scores) if pattern_scores else 0
+            # Hitung skor total untuk satu intent dengan mencari skor pola terbaik di dalamnya
+            max_score_in_rule = 0
+            for mapping in rule.get("mappings", []):
+                pattern_tokens = preprocess(mapping["pattern"])
+                score = self._score_text(pattern_tokens, processed_tokens)
+                if self.debug:
+                    print(f"[INTENT_DEBUG] rule={rule.get('name')} pattern={mapping['pattern']!r} -> pattern_tokens={pattern_tokens} score={score}")
+                if score > max_score_in_rule:
+                    max_score_in_rule = score
+            
+            # Jika skor intent ini lebih tinggi dari yang terbaik sejauh ini
+            if max_score_in_rule > highest_intent_score:
+                highest_intent_score = max_score_in_rule
+                best_intent_rule = rule
 
-            if total_score > best_score:
-                best_score = total_score
-                best_intent = rule["name"]
-                best_response = random.choice(rule["responses"])
+        # Jika tidak ada intent yang cocok sama sekali
+        # Jika skor tertinggi tidak mencapai ambang minimal, fallback
+        if self.debug:
+            print(f"[INTENT_DEBUG] best_intent={getattr(best_intent_rule,'name', None) if best_intent_rule else best_intent_rule} highest_intent_score={highest_intent_score} min_score={self.min_score}")
+        if highest_intent_score < self.min_score or not best_intent_rule:
+            return "fallback", random.choice(FALLBACK_RESPONSES), "TO_CS"
 
-        # Require a score strictly greater than `min_score` to accept a match.
-        # This avoids accepting very weak matches (score == min_score) which
-        # are often noisy. Tests create the engine with `min_score=1` and
-        # expect ambiguous inputs to fall back.
-        if best_intent is None or best_score <= self.min_score:
-            return "fallback", random.choice(FALLBACK_RESPONSES)
+        # --- Langkah 2: Di dalam Intent Terbaik, Temukan Respons Terbaik ---
+        best_response = None
+        highest_pattern_score = 0
+        
+        # Kita sekarang hanya mencari di dalam 'best_intent_rule' yang sudah kita menangkan
+        for mapping in best_intent_rule.get("mappings", []):
+            pattern_tokens = preprocess(mapping["pattern"])
+            score = self._score_text(pattern_tokens, processed_tokens)
 
-        return best_intent, best_response
+            if self.debug:
+                print(f"[INTENT_DEBUG] checking mapping pattern={mapping['pattern']!r} -> pattern_tokens={pattern_tokens} score={score}")
 
-    def detect_with_score(self, user_input: str) -> Tuple[str, str, int]:
-        """Return (intent_name, response_text, score) useful for analysis/debugging."""
-        norm_text = self.nlp.normalize(user_input)
+            if score > highest_pattern_score:
+                highest_pattern_score = score
+                best_response = mapping["response"]
+        
+        # Jika karena suatu alasan tidak ada respons yang ditemukan (seharusnya tidak terjadi)
+        if self.debug:
+            print(f"[INTENT_DEBUG] best_response={best_response} highest_pattern_score={highest_pattern_score}")
 
-        best_intent: Optional[str] = None
-        best_response: Optional[str] = None
-        best_score = 0
+        if not best_response or highest_pattern_score < self.min_score:
+            return "fallback", random.choice(FALLBACK_RESPONSES), "TO_CS"
 
-        for rule in INTENT_RULES:
-            pattern_scores = [self._score_pattern(p, norm_text) for p in rule["patterns"]]
-            total_score = max(pattern_scores) if pattern_scores else 0
+        # Dapatkan nama intent dan status routing
+        final_intent_name = best_intent_rule["name"]
+        status = route_intent(final_intent_name)
 
-            if total_score > best_score:
-                best_score = total_score
-                best_intent = rule["name"]
-                best_response = random.choice(rule["responses"])
+        return final_intent_name, best_response, status
 
-        if best_intent is None or best_score <= self.min_score:
-            return "fallback", random.choice(FALLBACK_RESPONSES), best_score
+    def detect_with_status(self, user_input: str) -> Tuple[str, Optional[str], str]:
+        """Compatibility wrapper used by demos: calls `detect_with_response`.
 
-        return best_intent, best_response, best_score
-
-    def detect_with_status(self, user_input: str):
+        Kept for backward compatibility with existing demo scripts.
         """
-        Mengembalikan:
-        - intent
-        - response
-        - status (AUTO_RESPONSE / TO_CS / TO_NOC)
-        """
-        intent, response = self.detect_intent(user_input)
-        status = route_intent(intent)
-        return intent, response, status
+        return self.detect_with_response(user_input)

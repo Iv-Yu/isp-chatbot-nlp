@@ -1,8 +1,19 @@
 import unittest
 
 try:
+    import sys
+    from pathlib import Path
     from fastapi.testclient import TestClient
-    from chatbot.api_fastapi import app  # type: ignore
+
+    # Pastikan src ada di sys.path agar api_fastapi bisa di-import
+    ROOT = Path(__file__).resolve().parents[1]
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+
+    try:
+        from api_fastapi import app  # type: ignore
+    except Exception:
+        from chatbot.api_fastapi import app  # type: ignore
     HAS_TESTCLIENT = True
 except Exception:
     HAS_TESTCLIENT = False
@@ -20,6 +31,7 @@ class TestApiEndpoints(unittest.TestCase):
         self.assertIn("intent", data)
         self.assertIn("reply", data)
         self.assertIn("status", data)
+        self.assertIn(data["status"], ["AUTO_RESPONSE", "TO_CS", "TO_NOC"])
 
     def test_cs_escalate(self):
         resp = self.client.post("/cs/escalate", json={"message": "tolong"})

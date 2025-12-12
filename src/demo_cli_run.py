@@ -3,10 +3,10 @@ from chatbot import tickets
 
 
 def show(msg, intent, reply, status):
-    print(f"> User: {msg}")
-    print(f"  -> intent: {intent}")
-    print(f"  -> reply: {reply}")
-    print(f"  -> status: {status}\n")
+    print(f"> User:   {msg}")
+    print(f"  - Intent: {intent}")
+    print(f"  - Reply:  {reply}")
+    print(f"  - Status: {status}\n")
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
 
     # Simulate escalate to NOC via API -> create ticket
     tid = tickets.create_ticket("NOC", "kabel putus di jalan")
-    print(f"[Demo] Created ticket: {tid}\n")
+    print(f"[Demo] Tiket dibuat: {tid}\n")
 
     # 4. User asks to check ticket status (intent asks for ID)
     msg = "cek status tiket"
@@ -39,8 +39,8 @@ def main():
     # 5. User provides ticket id -> simulate lookup
     msg = tid
     tstatus = tickets.get_ticket_status(msg)
-    print(f"> User: {msg}")
-    print(f"  -> ticket status: {tstatus}\n")
+    print(f"> User:   {msg}")
+    print(f"  - Tiket Status: {tstatus}\n")
 
 
 if __name__ == "__main__":

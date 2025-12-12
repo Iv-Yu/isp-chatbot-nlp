@@ -7,7 +7,7 @@ Routing keputusan hasil NLP sesuai flow CAPSTONE:
 - TO_NOC         → intent teknis (kabel putus, gangguan)
 """
 
-TECHNICAL_INTENTS = ["kabel_putus", "gangguan_umum", "gangguan_lemot_umum"]
+TECHNICAL_INTENTS = ["kabel_putus", "gangguan_umum", "gangguan_lemot_umum", "gangguan_massal"]
 CS_INTENTS = ["cek_coverage", "berhenti_langganan", "ganti_password_wifi"]
 
 

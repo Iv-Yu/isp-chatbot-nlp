@@ -36,9 +36,11 @@ uvicorn src.api_fastapi:app --reload
 ```
 
 Akses API:
-- POST `/chat`
+- POST `/chat` atau `/predict` → mengembalikan `intent`, `confidence`, `status` (AUTO_RESPONSE/TO_CS/TO_NOC), `reply`, dan `entity` (jika terdeteksi)
 - POST `/cs/escalate`
 - POST `/noc/escalate`
+
+Catatan: endpoint eskalasi hanya dummy untuk keperluan tugas (membuat tiket mock di memori, tanpa integrasi eksternal).
 
 ---
 
