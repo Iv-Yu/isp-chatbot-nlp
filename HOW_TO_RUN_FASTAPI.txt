@@ -1,0 +1,19 @@
+Untuk memulai program dan mengaktifkan service FastAPI, Anda perlu menggunakan `uvicorn`. Pastikan Anda sudah menginstal dependensi dari `requirements.txt` (termasuk `uvicorn`).
+
+Jika Anda menggunakan virtual environment (sangat disarankan), aktifkan terlebih dahulu. Contoh:
+`.\venv\Scripts\activate` (untuk Windows)
+`source venv/bin/activate` (untuk Linux/macOS)
+
+Setelah virtual environment aktif (atau jika Anda tidak menggunakannya), jalankan perintah berikut di terminal dari root folder proyek (`d:\isp-chatbot-nlp\`):
+
+`uvicorn src.api_fastapi:app --host 0.0.0.0 --port 8000`
+
+Penjelasan perintah:
+- `uvicorn src.api_fastapi:app`: Memberi tahu uvicorn untuk mencari objek aplikasi FastAPI bernama `app` di dalam modul `api_fastapi.py` yang berada di folder `src`.
+- `--host 0.0.0.0`: Membuat aplikasi dapat diakses dari IP manapun di jaringan lokal Anda.
+- `--port 8000`: Menjalankan aplikasi pada port 8000. Anda bisa mengubahnya jika port tersebut sudah digunakan.
+
+Setelah perintah dijalankan, Anda akan melihat output dari uvicorn yang menunjukkan bahwa server sedang berjalan, biasanya di `http://0.0.0.0:8000` atau `http://127.0.0.1:8000`. Anda bisa mengakses dokumentasi API secara otomatis di `http://127.0.0.1:8000/docs` atau `http://127.0.0.1:8000/redoc`.
+
+Jika ada masalah dengan dependensi, Anda bisa menginstalnya dengan:
+`pip install -r requirements.txt`

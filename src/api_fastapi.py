@@ -30,14 +30,12 @@ def time_greet(now: datetime | None = None) -> str:
     Uses `TIMEZONE` env when available. Returns one of: Selamat pagi/siang/sore/malam.
     """
     try:
-        if now is None:
-            if ZoneInfo is not None:
-                now = datetime.now(tz=ZoneInfo(TIMEZONE))
-            else:
-                now = datetime.now()
+        if now is None and ZoneInfo:
+            now = datetime.now(tz=ZoneInfo(TIMEZONE))
     except Exception:
-        now = datetime.now()
-
+        pass
+    
+    now = now or datetime.now()
     hour = now.hour
     if 5 <= hour < 11:
         return "Selamat pagi"
@@ -105,85 +103,75 @@ def _check_admin(token: str | None):
 async def health_check():
     return {"status": "ok"}
 
+@app.get("/")
+async def root():
+    """Root endpoint to verify the API is running."""
+    return {"message": "ISP Chatbot Intent API is running. Send POST requests to /chat"}
+
+@app.get("/chat")
+async def chat_get_info():
+    """Helpful message for browser access."""
+    return {"error": "Method Not Allowed", "hint": "Gunakan POST request untuk mengirim pesan ke endpoint ini, atau buka /docs untuk mencoba."}
+
 def _predict(message: str) -> ChatResponse:
     if not message.strip():
         raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong.")
 
+    # Handle special internal protocols from Telegram Bot
+    if message.startswith("__IDENTITY__:"):
+        identity_val = message.replace("__IDENTITY__:", "")
+        # Logika simpan identitas ke DB bisa di sini
+        return ChatResponse(intent="provide_identity", confidence=1.0, status="OK", reply=f"Identitas {identity_val} berhasil diterima.")
+    
+    if message.startswith("__LOCATION__:"):
+        loc_val = message.replace("__LOCATION__:", "")
+        # Logika simpan lokasi ke DB bisa di sini
+        return ChatResponse(intent="provide_location", confidence=1.0, status="OK", reply="Lokasi berhasil dipetakan.")
+
     entity = entity_extractor.extract(message)
-
-    def _time_greet() -> str:
-        # Create timezone-aware now if possible
-        try:
-            if ZoneInfo is not None:
-                now = datetime.now(tz=ZoneInfo(TIMEZONE))
-            else:
-                now = datetime.now()
-        except Exception:
-            now = datetime.now()
-
-        hour = now.hour
-        if 5 <= hour < 11:
-            return "Selamat pagi"
-        if 11 <= hour < 15:
-            return "Selamat siang"
-        if 15 <= hour < 18:
-            return "Selamat sore"
-        return "Selamat malam"
 
     # 1. Mode Gangguan Massal (Prioritas Tertinggi)
     if _OUTAGE_STATE["enabled"]:
-        outage_reply = f"{_time_greet()}! {_OUTAGE_STATE['message']}"
+        outage_reply = f"{time_greet()}! {_OUTAGE_STATE['message']}"
         return ChatResponse(
             intent="gangguan_massal",
             confidence=1.0,
             entity=entity,
-            status="TO_NOC",
+            status="TO_NOC",  # Status internal tetap TO_NOC
             reply=outage_reply,
         )
 
     # 2. Deteksi menggunakan RuleEngine yang baru
     # Metode ini langsung mengembalikan intent, respons spesifik, dan status
-    rule_intent, specific_response, status = rule_engine.detect_with_response(message)
+    intent, base_reply, status = rule_engine.detect_with_response(message)
 
-    # 3. Jika RuleEngine menemukan kecocokan yang kuat
-    if rule_intent != "fallback":
-        # Untuk greeting: tambahkan sapaan waktu kecuali respons sudah
-        # mengandung sapaan (mis. "Selamat malam", "Waalaikumsalam") atau
-        # pesan pengguna sudah menyertakan kata sapaan.
-        final_reply = specific_response
-        if rule_intent == "greeting":
-            resp_lower = specific_response.strip().lower()
+    # 3. Tentukan confidence dan siapkan data fallback jika perlu
+    if intent == "fallback":
+        confidence = 0.0
+        status = route_intent(intent)
+        base_reply = random.choice(FALLBACK_RESPONSES)
+        if APPLY_TIME_GREETING in {"all"}:
+            if not base_reply.strip().lower().startswith(("selamat", "waalaikumsalam", "assalamu")):
+                base_reply = f"{time_greet()}! {base_reply}"
+        final_reply = base_reply
+    else:
+        confidence = 1.0
+        final_reply = base_reply
+        if intent == "greeting":
+            resp_lower = base_reply.strip().lower()
             msg_lower = message.strip().lower()
-            # jika respons sudah dimulai dengan sapaan kebahasaan, jangan tambahkan prefix
             if not (
                 resp_lower.startswith(("selamat", "waalaikumsalam", "assalamu"))
                 or any(g in msg_lower for g in ("selamat", "assalam", "assalamu"))
             ):
-                final_reply = f"{time_greet()}! {specific_response}"
-
-        return ChatResponse(
-            intent=rule_intent,
-            confidence=1.0,  # Keyakinan 100% karena berbasis aturan
-            entity=entity,
-            status=status,
-            reply=final_reply,
-        )
-
-    # 4. RuleEngine fallback: gunakan fallback response statis (rules-only design)
-    fallback_intent = "fallback"
-    fallback_conf = 0.0
-    fallback_status = route_intent(fallback_intent)
-    fallback_reply = random.choice(FALLBACK_RESPONSES)
-    if APPLY_TIME_GREETING in {"all"}:
-        if not fallback_reply.strip().lower().startswith(("selamat", "waalaikumsalam", "assalamu")):
-            fallback_reply = f"{time_greet()}! {fallback_reply}"
+                final_reply = f"{time_greet()}! {base_reply}"
 
     return ChatResponse(
-        intent=fallback_intent,
-        confidence=fallback_conf,
+        intent=intent,
+        confidence=confidence,
         entity=entity,
-        status=fallback_status,
-        reply=fallback_reply,
+        status=status,
+        reply=final_reply,
     )
 
 # --- Endpoint API (Tidak Berubah, hanya endpoint /predict dihapus) ---

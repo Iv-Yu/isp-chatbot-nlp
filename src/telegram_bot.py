@@ -14,28 +14,28 @@ from telegram.ext import Filters, MessageHandler, Updater, CallbackContext, Comm
 from dotenv import load_dotenv
 load_dotenv()
 
-# Config dari env
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHATBOT_API_URL = os.getenv("CHATBOT_API_URL", "http://127.0.0.1:8000/chat")
-
-# --- Kode Diagnostik untuk Memverifikasi Token ---
-if TELEGRAM_TOKEN:
-    # Tampilkan beberapa karakter awal dan akhir untuk verifikasi
-    token_preview = f"{TELEGRAM_TOKEN[:6]}...{TELEGRAM_TOKEN[-4:]}"
-    print(f"[DIAGNOSTIC] Token yang akan digunakan: {token_preview}")
-else:
-    # Ini akan memicu ValueError di bawah, tapi bagus untuk kejelasan
-    print("[DIAGNOSTIC] Peringatan: TELEGRAM_TOKEN tidak ditemukan di environment.")
-# --- Akhir Kode Diagnostik ---
-
-if not TELEGRAM_TOKEN:
-    raise ValueError("TELEGRAM_TOKEN tidak ditemukan di environment variable. Set dulu ya kak.")
-
-# Mengatur logging untuk melihat error
+# Mengatur logging untuk melihat error (Dipindahkan ke atas agar tidak NameError)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+# Config dari env
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHATBOT_API_URL = os.getenv("CHATBOT_API_URL", "http://127.0.0.1:8000/chat")
+# Pastikan URL tidak berakhir dengan slash untuk konsistensi
+CHATBOT_API_URL = CHATBOT_API_URL.rstrip('/')
+
+# --- Kode Diagnostik untuk Memverifikasi Token ---
+if TELEGRAM_TOKEN:
+    # Tampilkan beberapa karakter awal dan akhir untuk verifikasi
+    logger.info(f"Bot diinisialisasi dengan token: {TELEGRAM_TOKEN[:6]}...{TELEGRAM_TOKEN[-4:]}")
+else:
+    logger.error("TELEGRAM_TOKEN tidak ditemukan di environment.")
+# --- Akhir Kode Diagnostik ---
+
+if not TELEGRAM_TOKEN:
+    raise ValueError("TELEGRAM_TOKEN tidak ditemukan di environment variable. Set dulu ya kak.")
 
 # In-memory per-user state, cocok untuk development
 # Untuk production, pertimbangkan database (Redis, dll)
@@ -123,7 +123,11 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         # Kirim balasan dari API
         update.message.reply_text(reply_text)
 
-        # Jika ada aksi yang perlu ditindaklanjuti, kirim pesan permintaan
+        # Jika status adalah eskalasi, informasikan ke user
+        if payload.get("status") in ["TO_CS", "TO_NOC"]:
+            logger.info(f"Eskalasi terdeteksi untuk chat_id {chat_id}: {payload.get('status')}")
+
+        # Proses antrian aksi (input identitas/lokasi)
         process_pending_queue(update, context)
 
     except requests.exceptions.RequestException as e:
@@ -146,7 +150,7 @@ def handle_pending_identity(update: Update, context: CallbackContext, pre_captur
 
     try:
         # Kirim data identitas ke backend (fire-and-forget)
-        requests.post(CHATBOT_API_URL, json={"message": f"__IDENTITY__:{name_or_id}", "chat_id": chat_id}, timeout=3)
+        requests.post(CHATBOT_API_URL, json={"message": f"__IDENTITY__:{name_or_id}"}, timeout=5)
     except requests.exceptions.RequestException:
         logger.warning(f"Could not send IDENTITY info for chat_id {chat_id}")
 
@@ -174,7 +178,7 @@ def handle_location(update: Update, context: CallbackContext) -> None:
 
     try:
         # Kirim data lokasi ke backend
-        requests.post(CHATBOT_API_URL, json={"message": f"__LOCATION__:{loc_text}", "chat_id": chat_id}, timeout=3)
+        requests.post(CHATBOT_API_URL, json={"message": f"__LOCATION__:{loc_text}"}, timeout=5)
     except requests.exceptions.RequestException:
         logger.warning(f"Could not send LOCATION info for chat_id {chat_id}")
     
@@ -244,7 +248,12 @@ def main() -> None:
     dp.add_handler(MessageHandler(Filters.location, handle_location))
 
     # Mulai bot
-    updater.start_polling()
+    try:
+        updater.start_polling(clean=True) # clean=True menghapus pesan lama yang tertunda
+    except Exception as e:
+        logger.error(f"Gagal memulai bot: {e}")
+        return
+
     logger.info("Bot Telegram sedang berjalan...")
     updater.idle()
 
