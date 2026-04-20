@@ -1,4 +1,4 @@
-# Capstone Project — Chatbot Layanan ISP Berbasis NLP (Rule-based)
+# Chatbot Layanan ISP Berbasis NLP (Rule-based)
 
 ## 🎯 Deskripsi Singkat
 Proyek ini merupakan implementasi chatbot layanan pelanggan Internet Service Provider (ISP)
