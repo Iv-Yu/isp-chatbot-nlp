@@ -1,0 +1,15 @@
+timestamp,message,intent,status,reply
+2026-04-20 09:33:49,selamat pagi,greeting,AUTO_RESPONSE,Selamat pagi! Ada yang bisa saya bantu?
+2026-04-20 09:34:10,mau tanya paket kak,info_paket,AUTO_RESPONSE,Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing). Kakak tertarik paket berapa Mbps?
+2026-04-20 09:34:35,kalo cara ganti password,ganti_password_wifi,TO_CS,"Untuk ganti password WiFi, kakak bisa ikuti panduan di https://pendik.id/panduan ya 😊 Atau kirim ID Pelanggan jika ingin dibantu dari sistem."
+2026-04-20 09:35:24,kak wifinya muter muter,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20 09:35:32,lemot kak,gangguan_lemot_umum,TO_NOC,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏 - Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb) - Sejak jam berapa terasa lemot?  Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-20 09:35:43,buat game pubg,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20 09:35:50,buat game,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20 09:36:06,buat buka tiktok,gangguan_aplikasi,AUTO_RESPONSE,"Baik kak, apakah kendalanya hanya terjadi di TikTok? 🙏 Mohon kirim screenshot errornya + jam kejadian ya kak, nanti kami cek apakah ini kendala rute atau CDN aplikasi."
+2026-04-20 09:36:22,itu kak udah saya kirim,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20 09:36:30,oke,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20 09:36:51,kak modem saya nyala merah,gangguan_umum,TO_NOC,"Baik kak, jika lampu Internet di modem merah, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih merah, mohon infokan ID Pelanggan ya."
+2026-04-20 09:38:09,okw,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20 09:38:22,kak cara ganti nama gimana ya,pembayaran,AUTO_RESPONSE,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.
+2026-04-20 09:38:35,bayarnya dimana kak,pembayaran,AUTO_RESPONSE,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.

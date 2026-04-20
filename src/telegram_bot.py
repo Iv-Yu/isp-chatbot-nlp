@@ -107,7 +107,7 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         # Kirim pesan ke API chatbot
         response = requests.post(
             CHATBOT_API_URL,
-            json={"message": user_text},
+            json={"message": user_text, "chat_id": chat_id},
             timeout=20,
         )
         response.raise_for_status()
@@ -150,7 +150,9 @@ def handle_pending_identity(update: Update, context: CallbackContext, pre_captur
 
     try:
         # Kirim data identitas ke backend (fire-and-forget)
-        requests.post(CHATBOT_API_URL, json={"message": f"__IDENTITY__:{name_or_id}"}, timeout=5)
+        payload = {"message": f"__IDENTITY__:{name_or_id}", "chat_id": chat_id}
+        requests.post(CHATBOT_API_URL, json=payload, timeout=5)
+        logger.info(f"Sent identity to API for chat_id {chat_id}")
     except requests.exceptions.RequestException:
         logger.warning(f"Could not send IDENTITY info for chat_id {chat_id}")
 
@@ -178,11 +180,29 @@ def handle_location(update: Update, context: CallbackContext) -> None:
 
     try:
         # Kirim data lokasi ke backend
-        requests.post(CHATBOT_API_URL, json={"message": f"__LOCATION__:{loc_text}"}, timeout=5)
+        payload = {"message": f"__LOCATION__:{loc_text}", "chat_id": chat_id}
+        requests.post(CHATBOT_API_URL, json=payload, timeout=5)
+        logger.info(f"Sent location to API for chat_id {chat_id}")
     except requests.exceptions.RequestException:
         logger.warning(f"Could not send LOCATION info for chat_id {chat_id}")
     
     # Lanjutkan ke antrian berikutnya
+    process_pending_queue(update, context)
+
+def handle_photo(update: Update, context: CallbackContext) -> None:
+    """Menangani kiriman foto atau screenshot dari user."""
+    chat_id = update.message.chat_id
+    
+    update.message.reply_text("Gambar berhasil diterima kak, kami lampirkan ke laporan ya 🙏")
+
+    try:
+        # Kirim sinyal ke API bahwa ada foto yang dikirim
+        payload = {"message": "__PHOTO_SENT__", "chat_id": chat_id}
+        requests.post(CHATBOT_API_URL, json=payload, timeout=5)
+        logger.info(f"Sent photo notification to API for chat_id {chat_id}")
+    except requests.exceptions.RequestException:
+        logger.warning(f"Could not send PHOTO info for chat_id {chat_id}")
+
     process_pending_queue(update, context)
 
 def handle_pending_location(update: Update, context: CallbackContext):
@@ -246,6 +266,7 @@ def main() -> None:
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
     dp.add_handler(MessageHandler(Filters.location, handle_location))
+    dp.add_handler(MessageHandler(Filters.photo | Filters.document, handle_photo))
 
     # Mulai bot
     try:
