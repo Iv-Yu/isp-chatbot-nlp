@@ -155,9 +155,9 @@ if data:
     st.divider()
 
     # Row 2: Charts
-    tabs = ["📋 Log Eskalasi"]
+    tabs = ["📈 Analitik Intent", "📋 Log Eskalasi"]
     if st.session_state["role"] == "admin":
-        tabs = ["📈 Analitik Intent"] + tabs + ["⚙️ Manajemen Sistem"]
+        tabs += ["⚙️ Manajemen Sistem"]
     
     tab_objs = st.tabs(tabs)
     
@@ -196,6 +196,22 @@ if data:
                                  color="Status", hole=0.4,
                                  color_discrete_map={"AUTO_RESPONSE": "#3498db", "TO_CS": "#f39c12", "TO_NOC": "#e74c3c", "OK": "#2ecc71"})
                 st.plotly_chart(fig_pie, use_container_width=True)
+
+                st.divider()
+                st.subheader("📥 Data Training")
+                all_logs_data = fetch_all_logs()
+                if all_logs_data:
+                    df_logs = pd.DataFrame(all_logs_data)
+                    csv_buffer = df_logs.to_csv(index=False).encode('utf-8')
+                    
+                    st.download_button(
+                        label="Download Chat Logs Terbaru (MySQL)",
+                        data=csv_buffer,
+                        file_name=f"chat_logs_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.info("Belum ada data log yang tersedia di database.")
             else:
                 st.info("Menunggu data interaksi pertama...")
 
@@ -277,23 +293,6 @@ if data:
                             st.error(f"Gagal: {msg}")
                     else:
                         st.warning("Username dan password tidak boleh kosong.")
-            
-            st.divider()
-            st.subheader("📥 Data Training")
-            all_logs_data = fetch_all_logs()
-            if all_logs_data:
-                # Convert list of dicts to CSV using Pandas
-                df_logs = pd.DataFrame(all_logs_data)
-                csv_buffer = df_logs.to_csv(index=False).encode('utf-8')
-                
-                st.download_button(
-                    label="Download Chat Logs Terbaru (MySQL)",
-                    data=csv_buffer,
-                    file_name=f"chat_logs_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.info("Belum ada data log yang tersedia di database.")
 
     # Script untuk auto-refresh sederhana
     if auto_refresh:
