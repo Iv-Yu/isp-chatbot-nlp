@@ -16,7 +16,7 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=True)
 
-API_BASE_URL = "http://127.0.0.1:8931"
+API_BASE_URL = "https://overturn-outsell-eligibly.ngrok-free.dev"
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 
 st.set_page_config(page_title="ISP Chatbot Monitoring", layout="wide")
