@@ -16,7 +16,7 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=True)
 
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = "http://127.0.0.1:8931"
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 
 st.set_page_config(page_title="ISP Chatbot Monitoring", layout="wide")
@@ -34,20 +34,31 @@ if not st.session_state["logged_in"]:
         user = st.text_input("Username")
         pw = st.text_input("Password", type="password")
         if st.form_submit_button("Login"):
-            try:
-                r = requests.post(f"{API_BASE_URL}/admin/login", json={"username": user, "password": pw})
-                if r.status_code == 200:
-                    res = r.json()
-                    st.session_state["logged_in"] = True
-                    st.session_state["role"] = res["role"]
-                    st.session_state["username"] = res["username"]
-                    st.rerun()
-                elif r.status_code == 401:
-                    st.error("Login Gagal. Cek kembali credentials Anda.")
-                else:
-                    st.error(f"❌ Error {r.status_code}: Gagal menghubungi server login.")
-            except Exception as e:
-                st.error(f"Koneksi API Gagal: {e}")
+            if not user.strip() or not pw.strip():
+                st.warning("⚠️ Username dan Password tidak boleh kosong!")
+            else:
+                try:
+                    r = requests.post(
+                        f"{API_BASE_URL}/admin/login", 
+                        json={"username": user, "password": pw},
+                        timeout=5
+                    )
+                    if r.status_code == 200:
+                        res = r.json()
+                        st.session_state["logged_in"] = True
+                        st.session_state["role"] = res["role"]
+                        st.session_state["username"] = res["username"]
+                        st.rerun()
+                    elif r.status_code == 401:
+                        st.error("❌ Username atau Password salah. Silakan coba lagi.")
+                    elif r.status_code == 500:
+                        st.error("❌ Terjadi kesalahan internal pada database server.")
+                    else:
+                        st.error(f"❌ Error {r.status_code}: Gagal menghubungi server login.")
+                except requests.exceptions.ConnectionError:
+                    st.error("🖥️ Server API tidak aktif atau tidak dapat dihubungi. Pastikan FastAPI sudah dijalankan.")
+                except Exception as e:
+                    st.error(f"⚠️ Terjadi kesalahan sistem: {e}")
     st.stop()
 
 # Sidebar Info User
@@ -197,21 +208,6 @@ if data:
                                  color_discrete_map={"AUTO_RESPONSE": "#3498db", "TO_CS": "#f39c12", "TO_NOC": "#e74c3c", "OK": "#2ecc71"})
                 st.plotly_chart(fig_pie, use_container_width=True)
 
-                st.divider()
-                st.subheader("📥 Data Training")
-                all_logs_data = fetch_all_logs()
-                if all_logs_data:
-                    df_logs = pd.DataFrame(all_logs_data)
-                    csv_buffer = df_logs.to_csv(index=False).encode('utf-8')
-                    
-                    st.download_button(
-                        label="Download Chat Logs Terbaru (MySQL)",
-                        data=csv_buffer,
-                        file_name=f"chat_logs_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.info("Belum ada data log yang tersedia di database.")
             else:
                 st.info("Menunggu data interaksi pertama...")
 
@@ -228,8 +224,10 @@ if data:
                 filtered_esc = [e for e in filtered_esc if e["status"] == "TO_CS"]
 
             for i, esc in enumerate(filtered_esc):
-                with st.expander(f" User {esc['chat_id']} - {esc['timestamp']} ({esc['status']})"):
+                conf_score = esc.get('confidence', 1.0)
+                with st.expander(f" User {esc['chat_id']} - {esc['timestamp']} ({esc['status']}) - Skor: {conf_score}"):
                     st.write(f"**Pesan Terakhir:** {esc['message']}")
+                    st.write(f"**Intent Terdeteksi:** `{esc.get('intent', 'n/a')}`")
                     
                     if esc['chat_id'] is not None:
                         st.divider()
@@ -293,6 +291,22 @@ if data:
                             st.error(f"Gagal: {msg}")
                     else:
                         st.warning("Username dan password tidak boleh kosong.")
+
+            st.divider()
+            st.subheader("📥 Data Training")
+            all_logs_data = fetch_all_logs()
+            if all_logs_data:
+                df_logs = pd.DataFrame(all_logs_data)
+                csv_buffer = df_logs.to_csv(index=False).encode('utf-8')
+                
+                st.download_button(
+                    label="Download Chat Logs Terbaru (MySQL)",
+                    data=csv_buffer,
+                    file_name=f"chat_logs_training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("Belum ada data log yang tersedia di database.")
 
     # Script untuk auto-refresh sederhana
     if auto_refresh:

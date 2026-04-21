@@ -7,6 +7,13 @@ import mysql.connector
 from datetime import datetime
 import time
 import logging
+
+# Tambahkan ini untuk meredam log warning dari transformers
+import warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore", message=".*position_ids.*")
+
+from passlib.context import CryptContext
 try:
     # Python 3.9+: zoneinfo in stdlib
     from zoneinfo import ZoneInfo
@@ -18,7 +25,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 from .chatbot.rule_engine import RuleEngine
-from .chatbot.rules import FALLBACK_RESPONSES
+from .chatbot.rules import INTENT_RULES, FALLBACK_RESPONSES
+from .chatbot.semantic_engine import SemanticEngine
+from .chatbot.ml_engine import MLEngine
 from .chatbot.response_router import route_intent
 from .chatbot import tickets
 from .nlp.entity_extractor import EntityExtractor
@@ -28,10 +37,17 @@ _start_time = time.time()
 # Setup logging
 # Penampung statistik intent di memori (reset jika server restart)
 _intent_counts = Counter()
+
+# Daftar kata kunci yang terlalu umum (ambigu) jika berdiri sendiri
+AMBIGUOUS_KEYWORDS = {"internet", "wifi", "koneksi", "sinyal", "paket", "bayar", "tagihan", "speed", "tes", "cek", "halo"}
+
 _status_counts = Counter()
 _intent_status_counts = defaultdict(Counter)
 _recent_escalations = []
 logger = logging.getLogger(__name__)
+
+# Konfigurasi Hashing Password
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -53,7 +69,7 @@ def get_db_connection():
         autocommit=True
     )
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "").strip().strip('"').strip("'")
 OUTAGE_ENV_FLAG = "OUTAGE_MODE"
 TIMEZONE = os.getenv("TIMEZONE", "Asia/Jakarta")
 APPLY_TIME_GREETING = os.getenv("APPLY_TIME_GREETING", "greeting").lower()  # all|greeting|none
@@ -81,16 +97,8 @@ def init_db():
                 message TEXT,
                 intent VARCHAR(50),
                 status VARCHAR(20),
-                reply TEXT
-            )
-        ''')
-        # Tabel Chats (Status Aktif)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS chats (
-                chat_id BIGINT PRIMARY KEY,
-                last_message TEXT,
-                status VARCHAR(20),
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                reply TEXT,
+                confidence FLOAT DEFAULT 1.0
             )
         ''')
         conn.commit()
@@ -109,7 +117,7 @@ def _get_chat_status(chat_id: Optional[int]) -> str:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT status FROM chats WHERE chat_id = %s", (chat_id,))
+        cursor.execute("SELECT status FROM chat_logs WHERE chat_id = %s ORDER BY timestamp DESC LIMIT 1", (chat_id,))
         result = cursor.fetchone()
         return result[0] if result else "OK"
     except Exception:
@@ -150,7 +158,8 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip().strip('"').strip("'")
 # --- Inisialisasi Objek ---
 # Gunakan ambang minimal 1 agar single-token intents (mis. 'halo', 'hai') terdeteksi
 rule_engine = RuleEngine(min_score=1)
-# ML classifier removed for clarity; fallback handled by rules and static responses
+semantic_engine = SemanticEngine()
+ml_engine = MLEngine()
 entity_extractor = EntityExtractor()
 
 app = FastAPI(title="ISP Chatbot Intent API")
@@ -227,16 +236,24 @@ async def get_admin_stats(_ = Depends(verify_admin_token)):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        # Ambil semua sesi yang berstatus eskalasi dari tabel chats
-        query = "SELECT * FROM chats WHERE status IN ('TO_CS', 'TO_NOC') ORDER BY updated_at DESC"
+        # Ambil pesan terbaru dari setiap user yang saat ini berstatus eskalasi
+        query = """
+            SELECT t1.* FROM chat_logs t1
+            JOIN (SELECT chat_id, MAX(timestamp) as max_ts FROM chat_logs GROUP BY chat_id) t2
+            ON t1.chat_id = t2.chat_id AND t1.timestamp = t2.max_ts
+            WHERE t1.status IN ('TO_CS', 'TO_NOC')
+            ORDER BY t1.timestamp DESC
+        """
         cursor.execute(query)
         rows = cursor.fetchall()
         for row in rows:
             active_sessions.append({
                 "chat_id": row["chat_id"],
-                "message": row["last_message"],
+                "message": row["message"],
+                "intent": row.get("intent", "n/a"),
+                "confidence": row.get("confidence", 1.0),
                 "status": row["status"],
-                "timestamp": row["updated_at"].strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": row["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
             })
     except Exception as e:
         logger.error(f"Error fetching active sessions: {e}")
@@ -252,28 +269,7 @@ async def get_admin_stats(_ = Depends(verify_admin_token)):
         recent_escalations=active_sessions
     )
 
-def _update_chat_session(chat_id: Optional[int], message: str, status: str):
-    """Memperbarui session chat aktif di database."""
-    if chat_id is None: return
-    conn = None
-    cursor = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        query = """
-            INSERT INTO chats (chat_id, last_message, status)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE last_message=%s, status=%s, updated_at=CURRENT_TIMESTAMP
-        """
-        cursor.execute(query, (chat_id, message, status, message, status))
-        conn.commit()
-    except Exception as e:
-        logger.error(f"Gagal update session chat: {e}")
-    finally:
-        if cursor: cursor.close()
-        if conn: conn.close()
-
-def _log_escalation(chat_id: Optional[int], message: str, intent: str, status: str):
+def _log_escalation(chat_id: Optional[int], message: str, intent: str, status: str, confidence: float = 1.0):
     """Mencatat pesan ke dalam daftar eskalasi memori untuk dashboard."""
     if status not in ["TO_CS", "TO_NOC"]: return
     _recent_escalations.append({
@@ -281,11 +277,12 @@ def _log_escalation(chat_id: Optional[int], message: str, intent: str, status: s
         "chat_id": chat_id,
         "message": message[:100] + "..." if len(message) > 100 else message,
         "intent": intent,
-        "status": status
+        "status": status,
+        "confidence": round(confidence, 2)
     })
     if len(_recent_escalations) > 20: _recent_escalations.pop(0)
 
-def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Optional[int] = None):
+def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Optional[int] = None, confidence: float = 1.0):
     """Menyimpan interaksi chat ke database MySQL."""
     conn = None
     cursor = None
@@ -293,10 +290,10 @@ def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Opt
         conn = get_db_connection()
         cursor = conn.cursor()
         query = """
-            INSERT INTO chat_logs (chat_id, message, intent, status, reply)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO chat_logs (chat_id, message, intent, status, reply, confidence)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (chat_id, message, intent, status, reply))
+        cursor.execute(query, (chat_id, message, intent, status, reply, confidence))
         conn.commit()
     except Exception as e:
         logger.error(f"Gagal menyimpan log ke DB: {e}")
@@ -312,7 +309,7 @@ def _load_stats_from_db():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT chat_id, message, intent, status, timestamp FROM chat_logs")
+        cursor.execute("SELECT chat_id, message, intent, status, timestamp, confidence FROM chat_logs")
         rows = cursor.fetchall()
         
         for row in rows:
@@ -328,7 +325,8 @@ def _load_stats_from_db():
                     "chat_id": row["chat_id"],
                     "message": row["message"],
                     "intent": intent,
-                    "status": status
+                    "status": status,
+                    "confidence": row.get("confidence", 1.0)
                 })
         del _recent_escalations[:-20]
     except Exception as e:
@@ -370,9 +368,8 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
         _status_counts[status] += 1
         _intent_status_counts["provide_identity"][status] += 1
         logger.info(f"Protocol IDENTITY received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_identity", status, f"Identitas {identity_val} berhasil diterima.", chat_id)
-        _update_chat_session(chat_id, message, status)
-        _log_escalation(chat_id, f"📌 ID: {identity_val}", "provide_identity", status)
+        _save_to_db(message, "provide_identity", status, f"Identitas {identity_val} berhasil diterima.", chat_id, 1.0)
+        _log_escalation(chat_id, f"📌 ID: {identity_val}", "provide_identity", status, 1.0)
         return ChatResponse(intent="provide_identity", confidence=1.0, status=status, reply=f"Identitas {identity_val} berhasil diterima.")
     
     if message.startswith("__LOCATION__:"):
@@ -384,9 +381,8 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
         _status_counts[status] += 1
         _intent_status_counts["provide_location"][status] += 1
         logger.info(f"Protocol LOCATION received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_location", status, "Lokasi berhasil dipetakan.", chat_id)
-        _update_chat_session(chat_id, message, status)
-        _log_escalation(chat_id, f"📍 Lokasi: {loc_val[:50]}", "provide_location", status)
+        _save_to_db(message, "provide_location", status, "Lokasi berhasil dipetakan.", chat_id, 1.0)
+        _log_escalation(chat_id, f"📍 Lokasi: {loc_val[:50]}", "provide_location", status, 1.0)
         return ChatResponse(intent="provide_location", confidence=1.0, status=status, reply="Lokasi berhasil dipetakan.")
 
     # Handle Protocol Foto/Screenshot
@@ -397,9 +393,8 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
         _status_counts[status] += 1
         _intent_status_counts["provide_screenshot"][status] += 1
         logger.info(f"Screenshot received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_screenshot", status, "User mengirimkan gambar/screenshot.", chat_id)
-        _update_chat_session(chat_id, "User mengirimkan gambar", status)
-        _log_escalation(chat_id, "🖼️ [Gambar/Screenshot]", "provide_screenshot", status)
+        _save_to_db(message, "provide_screenshot", status, "User mengirimkan gambar/screenshot.", chat_id, 1.0)
+        _log_escalation(chat_id, "🖼️ [Gambar/Screenshot]", "provide_screenshot", status, 1.0)
         return ChatResponse(intent="provide_screenshot", confidence=1.0, status=status, reply="Gambar berhasil diterima kak, kami lampirkan ke laporan ya 🙏")
 
     entity = entity_extractor.extract(message)
@@ -412,8 +407,7 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
         _intent_status_counts["gangguan_massal"]["TO_NOC"] += 1
         
         # Simpan ke DB agar tidak kosong di dashboard
-        _save_to_db(message, "gangguan_massal", "TO_NOC", outage_reply, chat_id)
-        _update_chat_session(chat_id, message, "TO_NOC")
+        _save_to_db(message, "gangguan_massal", "TO_NOC", outage_reply, chat_id, 1.0)
         
         return ChatResponse(
             intent="gangguan_massal",
@@ -423,16 +417,59 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
             reply=outage_reply,
         )
 
-    # 2. Deteksi menggunakan RuleEngine yang baru
-    # Metode ini langsung mengembalikan intent, respons spesifik, dan status
+    # 2. Deteksi Intent (Multi-Layer Hybrid Logic)
+    # Layer 1: Rule Engine (Exact/Token Match)
     intent, base_reply, status = rule_engine.detect_with_response(message)
+    confidence = 1.0
+    
+    # Cek jumlah token untuk validasi input singkat
+    tokens = rule_engine.preprocess(message)
+    is_short_input = len(tokens) <= 1
+    
+    # Cek apakah kata tersebut masuk kategori ambigu (misal hanya ngetik "internet")
+    is_ambiguous = is_short_input and len(tokens) > 0 and tokens[0] in AMBIGUOUS_KEYWORDS
 
-    # 3. Tentukan confidence dan siapkan data fallback jika perlu
     if intent == "fallback":
-        confidence = 0.0
-        base_reply = random.choice(FALLBACK_RESPONSES)
-    else:
-        confidence = 1.0
+        # Layer 2: ML Engine (SVM - Klasifikasi Statistik)
+        logger.info(f"RuleEngine fallback, trying MLEngine for: {message}")
+        
+        # Jika input ambigu, kita pasang threshold sangat tinggi (0.95)
+        if is_ambiguous:
+            ml_threshold = 0.95
+        else:
+            ml_threshold = 0.8 if is_short_input else 0.4
+            
+        ml_intent, ml_score = ml_engine.predict(message, threshold_design=ml_threshold)
+        
+        if ml_intent != "fallback":
+            intent = ml_intent
+            confidence = float(ml_score)
+            status = route_intent(intent)
+            # Ambil respons default dari rules berdasarkan intent hasil ML
+            for rule in INTENT_RULES:
+                if rule["name"] == intent:
+                    base_reply = rule["mappings"][0]["response"]
+                    break
+        else:
+            # Layer 3: Semantic Engine (SBERT - Contextual Meaning)
+            logger.info(f"MLEngine fallback, trying SemanticEngine for: {message}")
+            
+            # Jika ambigu, naikkan threshold ke level hampir mustahil (0.98)
+            if is_ambiguous:
+                sem_threshold = 0.98
+            else:
+                sem_threshold = 0.85 if is_short_input else 0.6
+                
+            sem_intent, sem_score, sem_reply = semantic_engine.detect(message, threshold=sem_threshold)
+            if sem_intent:
+                intent = sem_intent
+                confidence = float(sem_score)
+                base_reply = sem_reply
+                status = route_intent(intent)
+            else:
+                # Final Fallback jika semua engine gagal
+                confidence = 0.0
+                base_reply = random.choice(FALLBACK_RESPONSES)
 
     # 4. Post-processing: Apply time-based greetings
     final_reply = base_reply
@@ -454,14 +491,11 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
     _status_counts[status] += 1
     _intent_status_counts[intent][status] += 1
 
-    # Catat pesan ke log eskalasi dashboard
-    _log_escalation(chat_id, message, intent, status)
+    # Catat pesan ke log eskalasi dashboard dengan skor confidence
+    _log_escalation(chat_id, message, intent, status, confidence)
 
-    # Simpan ke Database MySQL secara permanen
-    _save_to_db(message, intent, status, final_reply, chat_id)
-
-    # Update session chat aktif
-    _update_chat_session(chat_id, message, status)
+    # Simpan ke Database MySQL secara permanen (termasuk status eskalasi dan confidence)
+    _save_to_db(message, intent, status, final_reply, chat_id, confidence)
 
     logger.info(f"ChatID: {chat_id} | Intent: {intent} | Status: {status} | Msg: {message[:20]}...")
 
@@ -486,13 +520,40 @@ async def login(req: LoginRequest):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT username, role FROM users WHERE username = %s AND password = %s", (req.username, req.password))
+        cursor.execute("SELECT username, password, role FROM users WHERE username = %s", (req.username,))
         user = cursor.fetchone()
+        
         if user:
-            return {"status": "success", "role": user["role"], "username": user["username"]}
+            stored_pw = user["password"]
+            authenticated = False
+            # Bcrypt memiliki limit 72 karakter. Kita potong input untuk mencegah error 500.
+            safe_password = req.password[:72]
+            
+            try:
+                # Gunakan safe_password untuk verifikasi hash
+                if pwd_context.identify(stored_pw) and pwd_context.verify(safe_password, stored_pw):
+                    authenticated = True
+            except Exception:
+                # Jika error karena hash malformed, biarkan authenticated = False
+                pass
+            
+            # Jika verifikasi hash gagal, coba bandingkan sebagai teks biasa (Plain Text)
+            if not authenticated and safe_password == stored_pw:
+                # Migrasi otomatis: Ubah plain text menjadi hash yang valid
+                new_hash = pwd_context.hash(safe_password)
+                cursor.execute("UPDATE users SET password = %s WHERE username = %s", (new_hash, req.username))
+                authenticated = True
+            
+            if authenticated:
+                return {"status": "success", "role": user["role"], "username": user["username"]}
+
         raise HTTPException(status_code=401, detail="Username atau password salah")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+        error_msg = str(e)
+        logger.error(f"LOGIN CRITICAL ERROR: {error_msg}")
+        if "no backends available" in error_msg:
+            raise HTTPException(status_code=500, detail="Server error: Library enkripsi (bcrypt) belum terinstal.")
+        raise HTTPException(status_code=500, detail=f"Database error: {error_msg}")
     finally:
         if conn and conn.is_connected():
             if cursor: cursor.close()
@@ -550,9 +611,8 @@ async def reply_to_user(req: ReplyRequest, _ = Depends(verify_admin_token)):
     
     res = py_requests.post(url, json={"chat_id": req.chat_id, "text": formatted_msg, "parse_mode": "Markdown"})
     if res.status_code == 200:
-        _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "OK", req.reply_message, req.chat_id)
-        # Set status menjadi OK agar hilang dari antrean eskalasi di dashboard
-        _update_chat_session(req.chat_id, f"Replied by {req.staff_name}", "OK")
+        # Menyimpan balasan manual dengan status 'OK' agar sesi dianggap selesai
+        _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "OK", req.reply_message, req.chat_id, 1.0)
         return {"status": "sent"}
     raise HTTPException(status_code=400, detail="Gagal mengirim pesan ke Telegram")
 
@@ -569,9 +629,12 @@ async def create_user(req: UserCreateRequest, _ = Depends(verify_admin_token)):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Username sudah terdaftar.")
         
+        # Potong password ke 72 karakter sebelum di-hash
+        hashed_password = pwd_context.hash(req.password[:72])
+        
         # Tambahkan user baru
         cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)", 
-                       (req.username, req.password, req.role))
+                       (req.username, hashed_password, req.role))
         conn.commit()
         return {"status": "success", "message": f"User {req.username} berhasil dibuat."}
     except Exception as e:

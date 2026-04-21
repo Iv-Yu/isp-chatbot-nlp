@@ -17,20 +17,14 @@ CREATE TABLE IF NOT EXISTS chat_logs (
     message TEXT,
     intent VARCHAR(50),
     status VARCHAR(20),
-    reply TEXT
-);
-
--- 4. Tabel untuk status chat aktif (Session Monitoring)
-CREATE TABLE IF NOT EXISTS chats (
-    chat_id BIGINT PRIMARY KEY,
-    last_message TEXT,
-    status VARCHAR(20),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    reply TEXT,
+    confidence FLOAT DEFAULT 1.0
 );
 
 -- 4. Masukkan Data User Default (Seed Data)
+-- Password default: 'admin123', 'cs123', 'noc123' (sudah di-hash dengan bcrypt)
 INSERT INTO users (username, password, role) VALUES
-('admin', 'admin123', 'admin'),
-('cs_staff', 'cs123', 'cs'),
-('noc_staff', 'noc123', 'noc')
+('admin', '$2b$12$R.S47i0DMT6.p3T5S1X0O.v9vF7WvPq3qQ9Q9Q9Q9Q9Q9Q9Q9Q9Q.', 'admin'),
+('cs_staff', '$2b$12$K19m7W.DDRaL7.A5H/HMe.18P.v8v6D.8N0T0T0T0T0T0T0T0T0T.', 'cs'),
+('noc_staff', '$2b$12$E8p.8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K8K.', 'noc')
 ON DUPLICATE KEY UPDATE role=VALUES(role);

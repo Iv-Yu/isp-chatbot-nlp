@@ -144,6 +144,9 @@
             {"pattern": "minta info paket", "response": "Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).\nKakak tertarik paket berapa Mbps?"},
             {"pattern": "harga paket", "response": "Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).\nKakak tertarik paket berapa Mbps?"},
             {"pattern": "pasang baru", "response": "Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).\nKakak tertarik paket berapa Mbps?"},
+            {"pattern": "pasang wifi", "response": "Wah, pilihan bagus kak! Untuk pasang baru, kakak bisa cek paketnya di https://pendik.id/pricing. Tertarik paket yang mana?"},
+            {"pattern": "langganan internet", "response": "Halo kak! Untuk mulai berlangganan, silakan pilih paketnya di https://pendik.id/pricing ya. Mau dibantu cek coverage lokasinya juga?"},
+            {"pattern": "mau langganan", "response": "Halo kak! Untuk mulai berlangganan, silakan pilih paketnya di https://pendik.id/pricing ya. Mau dibantu cek coverage lokasinya juga?"},
             {"pattern": "upgrade paket", "response": "Tentu kak, untuk upgrade paket silakan infokan ID Pelanggan dan paket tujuan yang diinginkan ya."},
         ]
     },

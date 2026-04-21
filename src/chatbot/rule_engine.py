@@ -18,13 +18,25 @@ class RuleEngine:
         self.min_score = int(min_score)
         self.debug = os.getenv("INTENT_DEBUG", "0") in {"1", "true", "yes"}
 
-    def _score_text(self, pattern_tokens: list[str], text_tokens: list[str]) -> int:
+    def preprocess(self, text: str) -> list[str]:
+        """Expose the preprocessing logic for external use."""
+        return preprocess(text)
+
+    def _score_text(self, pattern_tokens: list[str], text_tokens: list[str]) -> float:
         """Memberikan skor berdasarkan jumlah token yang cocok."""
         if not pattern_tokens or not text_tokens:
-            return 0
+            return 0.0
         
-        # Cukup hitung jumlah kata yang sama
-        return len(set(pattern_tokens) & set(text_tokens))
+        matches = set(pattern_tokens) & set(text_tokens)
+        score = float(len(matches))
+
+        # Penalti untuk input yang terlalu singkat/vague:
+        # Jika user hanya mengetik 1 kata, tapi pola terdiri dari beberapa kata (frasa),
+        # kita berikan skor 0.5 agar tidak langsung tembus min_score=1.
+        if len(text_tokens) == 1 and len(pattern_tokens) > 1:
+            return score * 0.5
+            
+        return score
 
     def detect_with_response(self, user_input: str) -> Tuple[str, Optional[str], str]:
         """
@@ -42,7 +54,7 @@ class RuleEngine:
 
         # --- Langkah 1: Temukan Intent dengan Skor Tertinggi ---
         best_intent_rule = None
-        highest_intent_score = 0
+        highest_intent_score = 0.0
 
         for rule in INTENT_RULES:
             # Hitung skor total untuk satu intent dengan mencari skor pola terbaik di dalamnya

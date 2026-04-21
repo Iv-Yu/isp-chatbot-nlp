@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Config dari env
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHATBOT_API_URL = os.getenv("CHATBOT_API_URL", "http://127.0.0.1:8000/chat")
+CHATBOT_API_URL = os.getenv("CHATBOT_API_URL", "http://127.0.0.1:8931/chat")
 # Pastikan URL tidak berakhir dengan slash untuk konsistensi
 CHATBOT_API_URL = CHATBOT_API_URL.rstrip('/')
 

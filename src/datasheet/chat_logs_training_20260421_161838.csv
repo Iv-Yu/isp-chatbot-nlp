@@ -1,0 +1,146 @@
+timestamp,chat_id,message,intent,status,reply
+2026-04-21T16:11:08,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T16:09:11,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T16:05:59,5793559890.0,hai,greeting,AUTO_RESPONSE,"Selamat sore! Hai! Silakan bertanya ya kak!, saya siap bantu."
+2026-04-21T16:05:56,5793559890.0,hai,greeting,AUTO_RESPONSE,"Selamat sore! Hai! Silakan bertanya ya kak!, saya siap bantu."
+2026-04-21T15:56:23,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T15:55:44,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T15:55:37,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T15:14:15,5793559890.0,b,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-21T15:14:12,5793559890.0,__IDENTITY__:b,provide_identity,TO_CS,Identitas b berhasil diterima.
+2026-04-21T15:14:04,5793559890.0,internet saya mati kak,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T15:13:58,5793559890.0,internet,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T15:13:53,5793559890.0,internet,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T15:13:49,5793559890.0,__LOCATION__:internet,provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T15:13:40,5793559890.0,i,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T15:13:38,5793559890.0,__LOCATION__:i,provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T15:13:30,5793559890.0,i,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T14:58:38,5793559890.0,internet,gangguan_lemot_umum,TO_CS,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-21T14:58:36,5793559890.0,__IDENTITY__:internet,provide_identity,TO_CS,Identitas internet berhasil diterima.
+2026-04-21T14:57:13,5793559890.0,internet kamu bagus,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:57:01,5793559890.0,internet,gangguan_lemot_umum,TO_CS,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-21T14:56:55,5793559890.0,halo,greeting,TO_CS,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T14:56:50,5793559890.0,twa,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T14:56:46,5793559890.0,__LOCATION__:tez,provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T14:56:40,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T14:54:32,5793559890.0,__IDENTITY__:j,provide_identity,TO_CS,Identitas j berhasil diterima.
+2026-04-21T14:47:08,5793559890.0,internet,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:47:04,5793559890.0,__IDENTITY__:j,provide_identity,TO_CS,Identitas j berhasil diterima.
+2026-04-21T14:45:50,5793559890.0,internet bagus,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:45:46,5793559890.0,__IDENTITY__:internet bagus,provide_identity,TO_CS,Identitas internet bagus berhasil diterima.
+2026-04-21T14:45:20,5793559890.0,internet,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:45:16,5793559890.0,halo,greeting,TO_CS,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T14:45:13,5793559890.0,__IDENTITY__:b,provide_identity,TO_CS,Identitas b berhasil diterima.
+2026-04-21T14:42:39,5793559890.0,ini internet apa ya,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:42:35,5793559890.0,__IDENTITY__:i,provide_identity,TO_CS,Identitas i berhasil diterima.
+2026-04-21T14:42:17,5793559890.0,internet,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:42:14,5793559890.0,__IDENTITY__:internet,provide_identity,TO_CS,Identitas internet berhasil diterima.
+2026-04-21T14:42:06,5793559890.0,internet koid min,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:42:00,5793559890.0,__IDENTITY__:internet koid min,provide_identity,TO_CS,Identitas internet koid min berhasil diterima.
+2026-04-21T14:40:55,5793559890.0,wifi tai,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:40:50,5793559890.0,bobrok,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-21T14:40:46,5793559890.0,bodoh,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-21T14:40:42,5793559890.0,__IDENTITY__:bodoh,provide_identity,TO_CS,Identitas bodoh berhasil diterima.
+2026-04-21T14:40:21,5793559890.0,kak saya mau langganan wifi,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:40:14,5793559890.0,__IDENTITY__:kak saya mau langganan wifi,provide_identity,TO_CS,Identitas kak saya mau langganan wifi berhasil diterima.
+2026-04-21T14:39:59,5793559890.0,pasang wifi kak,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:39:50,5793559890.0,__IDENTITY__:pasang wifi,provide_identity,TO_CS,Identitas pasang wifi berhasil diterima.
+2026-04-21T14:39:43,5793559890.0,saya mau tanya pasang wifi di kediri bisa,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-21T14:39:30,5793559890.0,hai,greeting,TO_CS,"Selamat siang! Hai! Silakan bertanya ya kak!, saya siap bantu."
+2026-04-21T14:39:24,5793559890.0,halo,greeting,TO_CS,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T12:07:17,5793559890.0,__IDENTITY__:ahkan,provide_identity,TO_CS,Identitas ahkan berhasil diterima.
+2026-04-20T12:05:24,5793559890.0,kak nyala merah,gangguan_umum,TO_CS,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-20T12:04:57,5793559890.0,"__LOCATION__:Lat:-7.83881, Lon:112.014337",provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-20T12:04:51,5793559890.0,lokasi manyaran sudah ada kah?,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-20T12:04:34,5793559890.0,__IDENTITY__:ivan,provide_identity,OK,Identitas ivan berhasil diterima.
+2026-04-20T12:04:20,5793559890.0,cek,cek_tagihan,AUTO_RESPONSE,"Untuk cek tagihan, silakan kirim ID Pelanggan (misal: OLT4-250012) atau nama yang terdaftar ya kak. Atas nama siapa ya kak?"
+2026-04-20T12:00:37,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,kak kami juga melayani info haikk silahkan di order 
+2026-04-20T11:59:52,6330387572.0,Info jamik,info_paket,AUTO_RESPONSE,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-20T11:59:33,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,kak kami juga melayani info haikk silahkan di order 
+2026-04-20T11:58:36,6330387572.0,🗿,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20T11:58:25,5793559890.0,halo kak,greeting,TO_CS,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T11:58:21,5793559890.0,tes,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20T11:57:55,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,baik kami cek kembali
+2026-04-20T11:57:47,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,ngentod
+2026-04-20T11:57:33,5793559890.0,bayar,pembayaran,TO_NOC,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.
+2026-04-20T11:57:19,5793559890.0,bayar,pembayaran,TO_NOC,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.
+2026-04-20T11:57:04,5793559890.0,mau bayar,gangguan_massal,TO_NOC,"Selamat siang! Sedang ada gangguan massal di jaringan kami. Tim sedang menanganinya, mohon tunggu dan coba lagi beberapa saat."
+2026-04-20T11:56:54,5793559890.0,halo,gangguan_massal,TO_NOC,"Selamat siang! Sedang ada gangguan massal di jaringan kami. Tim sedang menanganinya, mohon tunggu dan coba lagi beberapa saat."
+2026-04-20T11:54:31,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,baik kami cek kembali
+2026-04-20T11:54:04,6330387572.0,Lolololo,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20T11:53:59,5793559890.0,belum bisa mas,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20T11:53:52,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,ngentod
+2026-04-20T11:52:35,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,baik kak silahkan dicoba kembali koneksinya
+2026-04-20T11:51:38,5793559890.0,__IDENTITY__:olt9-260007,provide_identity,TO_NOC,Identitas olt9-260007 berhasil diterima.
+2026-04-20T11:51:24,5793559890.0,kak ganti password,ganti_password_wifi,TO_NOC,"Untuk ganti password WiFi, kakak bisa ikuti panduan di https://pendik.id/panduan ya 😊
+Atau kirim ID Pelanggan jika ingin dibantu dari sistem."
+2026-04-20T11:50:47,5793559890.0,"__LOCATION__:Lat:-7.838795, Lon:112.014331",provide_location,TO_NOC,Lokasi berhasil dipetakan.
+2026-04-20T11:50:38,5793559890.0,kak kabel putus,kabel_putus,TO_NOC,"Waduh, kabel putus ya kak. Mohon kirim lokasi lengkap + foto kondisi kabel supaya teknisi bisa langsung cek lapangan."
+2026-04-20T11:50:37,6330387572.0,"Gpp wes mas tipas keluwen aku. Di balado ya, sambel ojo akeh²",fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20T11:49:33,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,"aku bakol wifi, eseng kabel gelem ta?"
+2026-04-20T11:49:05,6330387572.0,Lawuh daging kebo,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20T11:48:47,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,"sego goreng lawuh opo
+"
+2026-04-20T11:48:07,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,opo wiii
+2026-04-20T11:48:07,6330387572.0,"Lho lha py to mas aku lue iki, makane pesen sego goreng iki",fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20T11:47:51,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,sokor
+2026-04-20T11:47:09,6330387572.0,MANUAL_REPLY_FROM_admin,manual_response,OK,jancok iii pedot o ae
+2026-04-20T11:42:29,6330387572.0,__IDENTITY__:Kak pesen sego goreng,provide_identity,OK,Identitas Kak pesen sego goreng berhasil diterima.
+2026-04-20T11:40:58,5793559890.0,kak lemot,gangguan_lemot_umum,TO_NOC,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-20T11:40:42,5793559890.0,kak bayar dimna,pembayaran,AUTO_RESPONSE,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.
+2026-04-20T11:40:35,6330387572.0,Kak wifi saya lemot,gangguan_umum,TO_NOC,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-20T11:39:22,5793559890.0,ok,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20T11:38:44,5793559890.0,MANUAL_REPLY_FROM_nocstaff,manual_response,OK,"silahkan restart modemnya kak
+"
+2026-04-20T11:37:04,5793559890.0,kak kok lemot bangett ya,gangguan_lemot_umum,TO_NOC,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-20T11:35:19,5793559890.0,oke,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20T11:34:45,5793559890.0,MANUAL_REPLY_FROM_admin,manual_response,OK,untuk ganti sandi silahkan foto  modemnya ya kak untuk mengetahui type perangkat
+2026-04-20T11:33:36,5793559890.0,__IDENTITY__:OLT5-2937,provide_identity,OK,Identitas OLT5-2937 berhasil diterima.
+2026-04-20T11:33:26,5793559890.0,kalo ganti sandi,ganti_password_wifi,TO_CS,"Untuk ganti password WiFi, kakak bisa ikuti panduan di https://pendik.id/panduan ya 😊
+Atau kirim ID Pelanggan jika ingin dibantu dari sistem."
+2026-04-20T11:33:19,5793559890.0,saya mau bayar,pembayaran,AUTO_RESPONSE,Pembayaran dapat dilakukan melalui rekening dan metode yang tertera di informasi resmi kami ya kak.
+2026-04-20T11:33:10,5793559890.0,halo,greeting,AUTO_RESPONSE,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T11:15:14,,terimakasih,goodbye,AUTO_RESPONSE,Sama-sama kak! Senang bisa membantu 😊
+2026-04-20T11:15:00,,kak wifi saya mati,gangguan_umum,TO_NOC,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-20T11:14:45,,halo,greeting,AUTO_RESPONSE,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T11:13:39,,halo kak,greeting,AUTO_RESPONSE,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T11:13:31,,tes,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-20T10:30:46,,oke,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20T10:30:22,,kak bayar nya berapa,cek_tagihan,AUTO_RESPONSE,"Untuk cek tagihan, silakan kirim ID Pelanggan (misal: OLT4-250012) atau nama yang terdaftar ya kak. Atas nama siapa ya kak?"
+2026-04-20T10:29:56,,kak kabel saya nglewer,kabel_putus,TO_NOC,"Waduh, kabel putus ya kak. Mohon kirim lokasi lengkap + foto kondisi kabel supaya teknisi bisa langsung cek lapangan."
+2026-04-20T10:29:47,,oke,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20T10:29:30,,kak pohon tumbang,kabel_putus,TO_NOC,"Terima kasih infonya kak. Untuk kendala tiang tumbang, kami butuh lokasi detail agar teknisi bisa dijadwalkan."
+2026-04-20T10:29:04,,oke thanks,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20T10:28:55,,terimakasih,goodbye,AUTO_RESPONSE,Sama-sama kak! Senang bisa membantu 😊
+2026-04-20T10:28:48,,terimakasih,goodbye,AUTO_RESPONSE,Sama-sama kak! Senang bisa membantu 😊
+2026-04-20T10:28:44,,makasih,goodbye,AUTO_RESPONSE,Sama-sama kak! Kalau ada kendala lagi tinggal chat aja ya.
+2026-04-20T10:28:37,,makasih,goodbye,AUTO_RESPONSE,Sama-sama kak! Kalau ada kendala lagi tinggal chat aja ya.
+2026-04-20T10:28:32,,oke,goodbye,AUTO_RESPONSE,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-20T10:28:27,,itu kak,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-20T10:22:53,,lemot buat YouTube,gangguan_aplikasi,AUTO_RESPONSE,"Baik kak, apakah kendalanya hanya terjadi di YouTube? 🙏
+Mohon kirim screenshot errornya + jam kejadian ya kak, nanti kami cek apakah ini kendala rute atau CDN aplikasi."
+2026-04-20T10:22:42,,kok lemot banget ya,gangguan_lemot_umum,TO_NOC,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-20T10:22:31,,halo kak,greeting,AUTO_RESPONSE,Selamat pagi! Halo kak! Ada yang bisa saya bantu?
+2026-04-20T10:14:23,,saya mau tanya internet saya bayarnya dimana ya,gangguan_umum,TO_NOC,"Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."
+2026-04-20T10:14:12,,halo kak,greeting,AUTO_RESPONSE,Selamat pagi! Halo kak! Ada yang bisa saya bantu?
