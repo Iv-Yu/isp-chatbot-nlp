@@ -67,10 +67,16 @@ if st.sidebar.button("Logout"):
     st.session_state["logged_in"] = False
     st.rerun()
 
-def send_reply(chat_id, msg):
+def send_reply(chat_id, msg, reply_to_id=None):
     headers = {"x-admin-token": ADMIN_TOKEN}
-    payload = {"chat_id": chat_id, "reply_message": msg, "staff_name": st.session_state["username"]}
+    payload = {"chat_id": chat_id, "reply_message": msg, "staff_name": st.session_state["username"], "reply_to_msg_id": reply_to_id}
     r = requests.post(f"{API_BASE_URL}/admin/reply-chat", json=payload, headers=headers)
+    return r.status_code == 200
+
+def resolve_chat(chat_id):
+    headers = {"x-admin-token": ADMIN_TOKEN}
+    payload = {"chat_id": chat_id, "staff_name": st.session_state["username"]}
+    r = requests.post(f"{API_BASE_URL}/admin/resolve-chat", json=payload, headers=headers)
     return r.status_code == 200
 
 def fetch_all_logs():
@@ -216,12 +222,12 @@ if data:
         role = st.session_state["role"]
         
         if data["recent_escalations"]:
-            # Filter data berdasarkan role: NOC hanya lihat TO_NOC, CS hanya lihat TO_CS, Admin semua.
+            # Filter berdasarkan active_statuses yang dikirim API
             filtered_esc = data["recent_escalations"]
             if role == "noc":
-                filtered_esc = [e for e in filtered_esc if e["status"] == "TO_NOC"]
+                filtered_esc = [e for e in filtered_esc if "TO_NOC" in (e.get("active_statuses") or "")]
             elif role == "cs":
-                filtered_esc = [e for e in filtered_esc if e["status"] == "TO_CS"]
+                filtered_esc = [e for e in filtered_esc if "TO_CS" in (e.get("active_statuses") or "")]
 
             for i, esc in enumerate(filtered_esc):
                 conf_score = esc.get('confidence', 1.0)
@@ -238,23 +244,56 @@ if data:
                         chat_container = st.container(height=300)
                         with chat_container:
                             for h in history:
-                                st.markdown(f"🕒 *{h['timestamp']}*")
-                                st.markdown(f"**User:** {h['message']}")
-                                st.markdown(f"**Bot:** {h['reply']}")
+                                col_msg, col_btn = st.columns([0.8, 0.2])
+                                with col_msg:
+                                    st.markdown(f"🕒 *{h['timestamp']}*")
+                                    st.markdown(f"**User:** {h['message']}")
+                                    if h.get('reply'): st.markdown(f"**Bot:** {h['reply']}")
+                                with col_btn:
+                                    if st.button("↩️ Reply", key=f"rep_{h['id']}"):
+                                        st.session_state[f"reply_target_{esc['chat_id']}"] = h.get('msg_id')
+                                        st.session_state[f"reply_text_preview_{esc['chat_id']}"] = h['message']
                                 st.markdown("---")
                         
-                        st.write("💬 **Balas Pesan:**")
-                        reply_text = st.text_area("Balasan Staff", key=f"reply_{i}")
-                        if st.button("Kirim Balasan", key=f"btn_{i}"):
+                        # --- Form Balas Pesan ---
+                        target_msg_id = st.session_state.get(f"reply_target_{esc['chat_id']}")
+                        preview = st.session_state.get(f"reply_text_preview_{esc['chat_id']}", "Pesan Terakhir")
+                        
+                        if target_msg_id:
+                            col_inf, col_can = st.columns([0.8, 0.2])
+                            col_inf.info(f"↪️ **Membalas:** *{preview[:50]}...*")
+                            if col_can.button("Batal", key=f"can_{esc['chat_id']}"):
+                                del st.session_state[f"reply_target_{esc['chat_id']}"]
+                                st.rerun()
+                        else:
+                            st.info("💡 Klik tombol ↩️ untuk membalas pesan spesifik.")
+                        
+                        # Gunakan chat_id sebagai key agar input tidak hilang saat refresh
+                        reply_text = st.text_area("Tulis balasan...", key=f"reply_input_{esc['chat_id']}")
+                        
+                        col_btn1, col_btn2 = st.columns(2)
+                        if col_btn1.button("📤 Kirim Balasan", key=f"btn_send_{esc['chat_id']}", use_container_width=True):
                             if reply_text:
-                                if send_reply(esc['chat_id'], reply_text):
+                                if send_reply(esc['chat_id'], reply_text, target_msg_id):
                                     st.success("Berhasil mengirim balasan!")
+                                    if f"reply_target_{esc['chat_id']}" in st.session_state:
+                                        del st.session_state[f"reply_target_{esc['chat_id']}"]
+                                    if f"reply_text_preview_{esc['chat_id']}" in st.session_state:
+                                        del st.session_state[f"reply_text_preview_{esc['chat_id']}"]
+                                    # Clear the text area after sending
+                                    st.session_state[f"reply_input_{esc['chat_id']}"] = ""
                                     time.sleep(1)
                                     st.rerun()
                                 else:
                                     st.error("Gagal mengirim balasan.")
                             else:
                                 st.warning("Pesan balasan tidak boleh kosong.")
+                        
+                        if col_btn2.button("✅ Selesaikan Chat", key=f"btn_resolve_{esc['chat_id']}", use_container_width=True):
+                            if resolve_chat(esc['chat_id']):
+                                st.success("Sesi chat berhasil diselesaikan.")
+                                time.sleep(1)
+                                st.rerun()
                     else:
                         st.warning("Chat ID tidak tersedia untuk membalas secara manual.")
 

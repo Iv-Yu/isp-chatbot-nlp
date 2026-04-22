@@ -1,4 +1,52 @@
 timestamp,chat_id,message,intent,status,reply
+2026-04-22T14:14:47,5793559890.0,lemot mas,gangguan_lemot_umum,TO_CS,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-22T14:14:40,5793559890.0,__IDENTITY__:mas lemot,provide_identity,TO_CS,Identitas mas lemot berhasil diterima.
+2026-04-22T14:14:21,5793559890.0,mas modemnya nyala merah,gangguan_umum,TO_CS,"Baik kak, jika lampu Internet di modem merah, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih merah, mohon infokan ID Pelanggan ya."
+2026-04-22T14:13:58,5793559890.0,__IDENTITY__:olt5,provide_identity,TO_CS,Identitas olt5 berhasil diterima.
+2026-04-22T14:13:48,5793559890.0,mas gangguan kahh?,gangguan_umum,TO_CS,Mohon maaf atas ketidaknyamanannya kak. Bisa infokan ID Pelanggan atau nama yang terdaftar dulu? Atas nama siapa ya kak? Nanti kami cek dari sistem.
+2026-04-22T14:13:29,5793559890.0,bos ge wa ra kenek,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-22T14:13:19,5793559890.0,bos wifine macet macet,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-22T14:13:04,5793559890.0,wifine,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-22T14:12:55,5793559890.0,wifine kendala bos?,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-22T14:12:48,5793559890.0,bos,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-22T14:12:40,5793559890.0,wifine suloyo bos,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-22T14:12:31,5793559890.0,wifine lemot bos,gangguan_lemot_umum,TO_CS,"Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏
+- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)
+- Sejak jam berapa terasa lemot?
+
+Kalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"
+2026-04-22T14:12:11,5793559890.0,saya ingin pasang wifi kak,info_paket,TO_CS,"Wah, pilihan bagus kak! Untuk pasang baru, kakak bisa cek paketnya di https://pendik.id/pricing. Tertarik paket yang mana?"
+2026-04-22T14:12:01,5793559890.0,halo,greeting,TO_CS,Selamat siang! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T19:42:58,5793559890.0,20mbps,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T19:42:23,5793559890.0,infoin paket,info_paket,TO_CS,"Berikut gambaran paket internet kami kak (detail & harga terbaru ada di https://pendik.id/pricing).
+Kakak tertarik paket berapa Mbps?"
+2026-04-21T17:01:27,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T17:01:06,5793559890.0,tes,fallback,TO_CS,"Sepertinya pertanyaannya di luar daftar yang saya pahami kak. Coba gunakan kata kunci seperti info paket, gangguan layanan, pembayaran, atau kabel putus ya kak."
+2026-04-21T17:00:12,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T17:00:09,5793559890.0,tes,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T16:36:09,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T16:24:58,5793559890.0,oke,goodbye,TO_CS,Baik kak. Kalau ada kendala lagi tinggal chat saya lagi ya 😊
+2026-04-21T16:24:51,5793559890.0,"__LOCATION__:Lat:-7.83881, Lon:112.014337",provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T16:24:44,5793559890.0,lokasi,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T16:24:40,5793559890.0,__IDENTITY__:cek lokasi,provide_identity,TO_CS,Identitas cek lokasi berhasil diterima.
+2026-04-21T16:24:28,5793559890.0,mau cek coverage kak,cek_tagihan,TO_CS,"Untuk cek tagihan, silakan kirim ID Pelanggan (misal: OLT4-250012) atau nama yang terdaftar ya kak. Atas nama siapa ya kak?"
+2026-04-21T16:24:16,5793559890.0,halo kak mau tanya ketersediaan lokasi,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T16:24:06,5793559890.0,__LOCATION__:halo kak mau tanya coverage,provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T16:23:54,5793559890.0,i,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T16:23:52,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
+2026-04-21T16:23:47,5793559890.0,tes,fallback,TO_CS,"Maaf kak, saya belum paham maksud pertanyaan kakak. Bisa dijelaskan lagi dengan kata lain?"
+2026-04-21T16:23:44,5793559890.0,__LOCATION__:tes,provide_location,TO_CS,Lokasi berhasil dipetakan.
+2026-04-21T16:19:03,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
+2026-04-21T16:18:59,5793559890.0,halo,greeting,TO_CS,Selamat sore! Halo kak! Ada yang bisa saya bantu?
 2026-04-21T16:11:08,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
 2026-04-21T16:09:11,5793559890.0,tes,cek_coverage,TO_CS,Untuk cek ketersediaan jaringan mohon kirim nama daerah lengkap atau share lokasi (pin point) ya kak 😊
 2026-04-21T16:05:59,5793559890.0,hai,greeting,AUTO_RESPONSE,"Selamat sore! Hai! Silakan bertanya ya kak!, saya siap bantu."

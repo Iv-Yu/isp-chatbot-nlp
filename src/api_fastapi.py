@@ -29,6 +29,7 @@ from .chatbot.rules import INTENT_RULES, FALLBACK_RESPONSES
 from .chatbot.semantic_engine import SemanticEngine
 from .chatbot.ml_engine import MLEngine
 from .chatbot.response_router import route_intent
+from .chatbot.smart_olt import SmartOLT
 from .chatbot import tickets
 from .nlp.entity_extractor import EntityExtractor
 
@@ -39,7 +40,7 @@ _start_time = time.time()
 _intent_counts = Counter()
 
 # Daftar kata kunci yang terlalu umum (ambigu) jika berdiri sendiri
-AMBIGUOUS_KEYWORDS = {"internet", "wifi", "koneksi", "sinyal", "paket", "bayar", "tagihan", "speed", "tes", "cek", "halo"}
+AMBIGUOUS_KEYWORDS = {"internet", "wifi", "koneksi", "sinyal", "paket", "bayar", "tagihan", "speed", "tes", "cek", "halo", "i", "p", "test"}
 
 _status_counts = Counter()
 _intent_status_counts = defaultdict(Counter)
@@ -98,9 +99,17 @@ def init_db():
                 intent VARCHAR(50),
                 status VARCHAR(20),
                 reply TEXT,
-                confidence FLOAT DEFAULT 1.0
+                confidence FLOAT DEFAULT 1.0,
+                msg_id BIGINT DEFAULT NULL
             )
         ''')
+        
+        # Cek apakah kolom msg_id sudah ada (untuk migrasi tabel lama)
+        cursor.execute("SHOW COLUMNS FROM chat_logs LIKE 'msg_id'")
+        if not cursor.fetchone():
+            logger.info("Menambahkan kolom msg_id ke tabel chat_logs...")
+            cursor.execute("ALTER TABLE chat_logs ADD COLUMN msg_id BIGINT DEFAULT NULL")
+            
         conn.commit()
     except Exception as e:
         logger.error(f"Gagal inisialisasi MySQL: {e}")
@@ -161,6 +170,7 @@ rule_engine = RuleEngine(min_score=1)
 semantic_engine = SemanticEngine()
 ml_engine = MLEngine()
 entity_extractor = EntityExtractor()
+smart_olt_client = SmartOLT() # Sekarang client ini mandiri mengambil config dari env
 
 app = FastAPI(title="ISP Chatbot Intent API")
 
@@ -168,6 +178,7 @@ app = FastAPI(title="ISP Chatbot Intent API")
 class ChatRequest(BaseModel):
     message: str
     chat_id: Optional[int] = None
+    msg_id: Optional[int] = None
 
 class ChatResponse(BaseModel):
     intent: str
@@ -204,6 +215,7 @@ class ReplyRequest(BaseModel):
     chat_id: int
     reply_message: str
     staff_name: str
+    reply_to_msg_id: Optional[int] = None
 
 class UserCreateRequest(BaseModel):
     username: str
@@ -236,13 +248,18 @@ async def get_admin_stats(_ = Depends(verify_admin_token)):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        # Ambil pesan terbaru dari setiap user yang saat ini berstatus eskalasi
+        # Query baru: Mengambil sesi unik yang memiliki antrean aktif
+        # Ditambah kolom 'active_statuses' untuk filter multi-departemen
         query = """
-            SELECT t1.* FROM chat_logs t1
-            JOIN (SELECT chat_id, MAX(timestamp) as max_ts FROM chat_logs GROUP BY chat_id) t2
-            ON t1.chat_id = t2.chat_id AND t1.timestamp = t2.max_ts
-            WHERE t1.status IN ('TO_CS', 'TO_NOC')
-            ORDER BY t1.timestamp DESC
+            SELECT l1.*, 
+            (SELECT GROUP_CONCAT(DISTINCT status) FROM chat_logs 
+             WHERE chat_id = l1.chat_id AND status IN ('TO_CS', 'TO_NOC') 
+             AND id > COALESCE((SELECT MAX(id) FROM chat_logs t_ok WHERE t_ok.chat_id = l1.chat_id AND t_ok.status = 'OK'), 0)
+            ) as active_statuses
+            FROM chat_logs l1
+            INNER JOIN (SELECT chat_id, MAX(id) as last_id FROM chat_logs GROUP BY chat_id) l2 ON l1.id = l2.last_id
+            HAVING active_statuses IS NOT NULL
+            ORDER BY l1.timestamp DESC
         """
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -253,7 +270,8 @@ async def get_admin_stats(_ = Depends(verify_admin_token)):
                 "intent": row.get("intent", "n/a"),
                 "confidence": row.get("confidence", 1.0),
                 "status": row["status"],
-                "timestamp": row["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": row["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
+                "active_statuses": row.get("active_statuses", "")
             })
     except Exception as e:
         logger.error(f"Error fetching active sessions: {e}")
@@ -282,7 +300,7 @@ def _log_escalation(chat_id: Optional[int], message: str, intent: str, status: s
     })
     if len(_recent_escalations) > 20: _recent_escalations.pop(0)
 
-def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Optional[int] = None, confidence: float = 1.0):
+def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Optional[int] = None, confidence: float = 1.0, msg_id: Optional[int] = None):
     """Menyimpan interaksi chat ke database MySQL."""
     conn = None
     cursor = None
@@ -290,10 +308,10 @@ def _save_to_db(message: str, intent: str, status: str, reply: str, chat_id: Opt
         conn = get_db_connection()
         cursor = conn.cursor()
         query = """
-            INSERT INTO chat_logs (chat_id, message, intent, status, reply, confidence)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO chat_logs (chat_id, message, intent, status, reply, confidence, msg_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (chat_id, message, intent, status, reply, confidence))
+        cursor.execute(query, (chat_id, message, intent, status, reply, confidence, msg_id))
         conn.commit()
     except Exception as e:
         logger.error(f"Gagal menyimpan log ke DB: {e}")
@@ -309,7 +327,7 @@ def _load_stats_from_db():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT chat_id, message, intent, status, timestamp, confidence FROM chat_logs")
+        cursor.execute("SELECT chat_id, message, intent, status, timestamp, confidence, msg_id FROM chat_logs")
         rows = cursor.fetchall()
         
         for row in rows:
@@ -326,7 +344,8 @@ def _load_stats_from_db():
                     "message": row["message"],
                     "intent": intent,
                     "status": status,
-                    "confidence": row.get("confidence", 1.0)
+                    "confidence": row.get("confidence", 1.0),
+                    "msg_id": row.get("msg_id")
                 })
         del _recent_escalations[:-20]
     except Exception as e:
@@ -344,7 +363,7 @@ async def root():
     """Root endpoint to verify the API is running."""
     return {"message": "ISP Chatbot Intent API is running. Send POST requests to /chat"}
 
-def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
+def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] = None) -> ChatResponse:
     """
     Internal logic to predict intent and generate a response.
     
@@ -354,72 +373,71 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
     if not message.strip():
         raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong.")
 
-    # Cek status sesi saat ini sebelum memproses
-    current_session_status = _get_chat_status(chat_id)
-
     # Handle special internal protocols from Telegram Bot
     if message.startswith("__IDENTITY__:"):
         identity_val = message.replace("__IDENTITY__:", "")
         _intent_counts["provide_identity"] += 1
         
         # Jika user sedang dalam eskalasi, pertahankan status tersebut agar masuk log staff
-        status = current_session_status if current_session_status in ["TO_CS", "TO_NOC"] else "OK"
+        # Ambil status terakhir untuk menentukan kategori antrean yang sesuai
+        current_status = _get_chat_status(chat_id)
+        status = current_status if current_status in ["TO_CS", "TO_NOC"] else "OK"
         
+        # Ambil status perangkat menggunakan modul SmartOLT yang sudah kita buat
+        smartolt_reply_part = smart_olt_client.get_customer_device_status(identity_val)
+        if not smartolt_reply_part:
+            logger.info(f"SmartOLT client returned empty reply for ID {identity_val}. Check SmartOLT logs for details.")
+            # Jika SmartOLT tidak memberikan balasan, kita bisa berikan pesan default atau biarkan kosong
+
         _status_counts[status] += 1
         _intent_status_counts["provide_identity"][status] += 1
         logger.info(f"Protocol IDENTITY received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_identity", status, f"Identitas {identity_val} berhasil diterima.", chat_id, 1.0)
+
+        final_identity_reply = f"Baik kak {identity_val}, datanya kami cek dulu ya 🙏"
+        if smartolt_reply_part:
+            final_identity_reply += f"\n\n{smartolt_reply_part}"
+
+        _save_to_db(message, "provide_identity", status, final_identity_reply, chat_id, 1.0, msg_id)
         _log_escalation(chat_id, f"📌 ID: {identity_val}", "provide_identity", status, 1.0)
-        return ChatResponse(intent="provide_identity", confidence=1.0, status=status, reply=f"Identitas {identity_val} berhasil diterima.")
+        return ChatResponse(intent="provide_identity", confidence=1.0, status=status, reply=final_identity_reply)
     
     if message.startswith("__LOCATION__:"):
         loc_val = message.replace("__LOCATION__:", "")
         _intent_counts["provide_location"] += 1
         
-        status = current_session_status if current_session_status in ["TO_CS", "TO_NOC"] else "OK"
+        current_status = _get_chat_status(chat_id)
+        status = current_status if current_status in ["TO_CS", "TO_NOC"] else "OK"
         
         _status_counts[status] += 1
         _intent_status_counts["provide_location"][status] += 1
         logger.info(f"Protocol LOCATION received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_location", status, "Lokasi berhasil dipetakan.", chat_id, 1.0)
+        _save_to_db(message, "provide_location", status, "Lokasi berhasil dipetakan.", chat_id, 1.0, msg_id)
         _log_escalation(chat_id, f"📍 Lokasi: {loc_val[:50]}", "provide_location", status, 1.0)
         return ChatResponse(intent="provide_location", confidence=1.0, status=status, reply="Lokasi berhasil dipetakan.")
 
     # Handle Protocol Foto/Screenshot
     if message == "__PHOTO_SENT__":
         _intent_counts["provide_screenshot"] += 1
-        status = current_session_status if current_session_status in ["TO_CS", "TO_NOC"] else "OK"
+        current_status = _get_chat_status(chat_id)
+        status = current_status if current_status in ["TO_CS", "TO_NOC"] else "OK"
         
         _status_counts[status] += 1
         _intent_status_counts["provide_screenshot"][status] += 1
         logger.info(f"Screenshot received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_screenshot", status, "User mengirimkan gambar/screenshot.", chat_id, 1.0)
+        _save_to_db(message, "provide_screenshot", status, "User mengirimkan gambar/screenshot.", chat_id, 1.0, msg_id)
         _log_escalation(chat_id, "🖼️ [Gambar/Screenshot]", "provide_screenshot", status, 1.0)
         return ChatResponse(intent="provide_screenshot", confidence=1.0, status=status, reply="Gambar berhasil diterima kak, kami lampirkan ke laporan ya 🙏")
 
     entity = entity_extractor.extract(message)
 
-    # 1. Mode Gangguan Massal (Prioritas Tertinggi)
-    if _OUTAGE_STATE["enabled"]:
-        outage_reply = f"{time_greet()}! {_OUTAGE_STATE['message']}"
-        _intent_counts["gangguan_massal"] += 1
-        _status_counts["TO_NOC"] += 1
-        _intent_status_counts["gangguan_massal"]["TO_NOC"] += 1
-        
-        # Simpan ke DB agar tidak kosong di dashboard
-        _save_to_db(message, "gangguan_massal", "TO_NOC", outage_reply, chat_id, 1.0)
-        
-        return ChatResponse(
-            intent="gangguan_massal",
-            confidence=1.0,
-            entity=entity,
-            status="TO_NOC",  # Status internal tetap TO_NOC
-            reply=outage_reply,
-        )
-
     # 2. Deteksi Intent (Multi-Layer Hybrid Logic)
     # Layer 1: Rule Engine (Exact/Token Match)
     intent, base_reply, status = rule_engine.detect_with_response(message)
+    
+    # Pastikan status dari Rule Engine juga melewati router pusat agar konsisten
+    if intent != "fallback":
+        status = route_intent(intent)
+        
     confidence = 1.0
     
     # Cek jumlah token untuk validasi input singkat
@@ -437,7 +455,8 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
         if is_ambiguous:
             ml_threshold = 0.95
         else:
-            ml_threshold = 0.8 if is_short_input else 0.4
+            # Threshold moderat untuk menyeimbangkan false positive
+            ml_threshold = 0.7 if is_short_input else 0.5
             
         ml_intent, ml_score = ml_engine.predict(message, threshold_design=ml_threshold)
         
@@ -471,39 +490,44 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
                 confidence = 0.0
                 base_reply = random.choice(FALLBACK_RESPONSES)
 
-    # 4. Post-processing: Apply time-based greetings
-    final_reply = base_reply
-    resp_lower = base_reply.strip().lower()
-    msg_lower = message.strip().lower()
-    
-    should_greet = (APPLY_TIME_GREETING == "all") or (APPLY_TIME_GREETING == "greeting" and intent == "greeting")
-    already_greeted = resp_lower.startswith(("selamat", "waalaikumsalam", "assalamu")) or \
-                      any(g in msg_lower for g in ("selamat", "assalam", "assalamu"))
+    # --- Tentukan Final Reply, Intent, dan Status ---
+    final_intent = intent
+    final_status = status
+    final_reply = base_reply # Mulai dengan balasan dari NLU
 
-    if should_greet and not already_greeted:
-        final_reply = f"{time_greet()}! {base_reply}"
+    # Override jika mode gangguan massal aktif DAN intentnya adalah teknis
+    if _OUTAGE_STATE["enabled"] and final_intent in TECHNICAL_INTENTS:
+        final_reply = f"{time_greet()}! {_OUTAGE_STATE['message']}"
+        final_status = "TO_NOC" # Pastikan diarahkan ke NOC
+        final_intent = "gangguan_massal" # Ganti intent untuk logging/statistik
+    else:
+        # 4. Post-processing: Terapkan salam berdasarkan waktu (hanya jika tidak di-override oleh gangguan)
+        resp_lower = base_reply.strip().lower()
+        msg_lower = message.strip().lower()
+        
+        should_greet = (APPLY_TIME_GREETING == "all") or (APPLY_TIME_GREETING == "greeting" and final_intent == "greeting")
+        already_greeted = resp_lower.startswith(("selamat", "waalaikumsalam", "assalamu")) or \
+                          any(g in msg_lower for g in ("selamat", "assalam", "assalamu"))
 
-    # Jika user sudah dalam antrean, paksa status pesan ini tetap eskalasi
-    if current_session_status in ["TO_CS", "TO_NOC"]:
-        status = current_session_status
+        if should_greet and not already_greeted:
+            final_reply = f"{time_greet()}! {base_reply}"
 
-    _intent_counts[intent] += 1
-    _status_counts[status] += 1
-    _intent_status_counts[intent][status] += 1
+    _intent_counts[final_intent] += 1
+    _status_counts[final_status] += 1
+    _intent_status_counts[final_intent][final_status] += 1
 
-    # Catat pesan ke log eskalasi dashboard dengan skor confidence
-    _log_escalation(chat_id, message, intent, status, confidence)
+    _log_escalation(chat_id, message, final_intent, final_status, confidence)
 
     # Simpan ke Database MySQL secara permanen (termasuk status eskalasi dan confidence)
-    _save_to_db(message, intent, status, final_reply, chat_id, confidence)
+    _save_to_db(message, final_intent, final_status, final_reply, chat_id, confidence, msg_id)
 
-    logger.info(f"ChatID: {chat_id} | Intent: {intent} | Status: {status} | Msg: {message[:20]}...")
+    logger.info(f"ChatID: {chat_id} | Intent: {final_intent} | Status: {final_status} | Msg: {message[:20]}...")
 
     return ChatResponse(
-        intent=intent,
+        intent=final_intent,
         confidence=confidence,
         entity=entity,
-        status=status,
+        status=final_status,
         reply=final_reply,
     )
 
@@ -511,7 +535,7 @@ def _predict(message: str, chat_id: Optional[int] = None) -> ChatResponse:
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
     """Menerima pesan chat dan mengembalikan intent, balasan, serta status."""
-    return _predict(request.message, request.chat_id)
+    return _predict(request.message, request.chat_id, request.msg_id)
 
 @app.post("/admin/login")
 async def login(req: LoginRequest):
@@ -566,12 +590,14 @@ async def get_chat_history(chat_id: int, _ = Depends(verify_admin_token)):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT timestamp, message, intent, status, reply FROM chat_logs WHERE chat_id = %s ORDER BY timestamp ASC"
+        query = "SELECT id, timestamp, message, intent, status, reply, msg_id FROM chat_logs WHERE chat_id = %s ORDER BY timestamp DESC"
         cursor.execute(query, (chat_id,))
         rows = cursor.fetchall()
         for row in rows:
-            if isinstance(row["timestamp"], datetime):
+            if isinstance(row.get("timestamp"), datetime):
                 row["timestamp"] = row["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                row["timestamp"] = str(row.get("timestamp", ""))
         return rows
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching history: {e}")
@@ -607,14 +633,31 @@ async def reply_to_user(req: ReplyRequest, _ = Depends(verify_admin_token)):
     
     import requests as py_requests
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    formatted_msg = f"📩 *Balasan dari {req.staff_name.upper()}:*\n\n{req.reply_message}"
     
-    res = py_requests.post(url, json={"chat_id": req.chat_id, "text": formatted_msg, "parse_mode": "Markdown"})
+    payload = {"chat_id": req.chat_id, "text": req.reply_message, "parse_mode": "Markdown"}
+    # Gunakan fitur reply asli Telegram jika msg_id tersedia
+    if req.reply_to_msg_id:
+        payload["reply_to_message_id"] = int(req.reply_to_msg_id)
+        
+    res = py_requests.post(url, json=payload)
     if res.status_code == 200:
-        # Menyimpan balasan manual dengan status 'OK' agar sesi dianggap selesai
-        _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "OK", req.reply_message, req.chat_id, 1.0)
+        # Ubah status menjadi 'STAFF_REPLY' agar log percakapan tidak langsung hilang dari dashboard
+        # Sertakan juga msg_id asal yang dibalas agar tersimpan di database
+        _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "STAFF_REPLY", 
+                    req.reply_message, req.chat_id, 1.0, req.reply_to_msg_id)
         return {"status": "sent"}
     raise HTTPException(status_code=400, detail="Gagal mengirim pesan ke Telegram")
+
+@app.post("/admin/resolve-chat", tags=["Admin"])
+async def resolve_chat(req: Dict, _ = Depends(verify_admin_token)):
+    """Menandai sesi chat sebagai selesai (OK)."""
+    chat_id = req.get("chat_id")
+    if not chat_id:
+        raise HTTPException(status_code=400, detail="Chat ID diperlukan")
+    
+    # Status 'OK' akan memicu query SQL untuk menyembunyikan sesi ini dari daftar antrean aktif
+    _save_to_db("SESSION_RESOLVED_BY_STAFF", "resolve", "OK", "Sesi diselesaikan oleh staff.", chat_id, 1.0)
+    return {"status": "resolved"}
 
 @app.post("/admin/users", tags=["Admin"])
 async def create_user(req: UserCreateRequest, _ = Depends(verify_admin_token)):
@@ -650,7 +693,7 @@ async def create_user(req: UserCreateRequest, _ = Depends(verify_admin_token)):
 # Keep this wrapper to avoid 404s until all clients are migrated.
 @app.post("/predict", response_model=ChatResponse)
 async def predict_compat(request: ChatRequest) -> ChatResponse:
-    return _predict(request.message, request.chat_id)
+    return _predict(request.message, request.chat_id, request.msg_id)
 
 @app.post("/cs/escalate", response_model=TicketResponse)
 async def escalate_cs(request: ChatRequest) -> TicketResponse:

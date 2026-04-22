@@ -1,4 +1,6 @@
 import numpy as np
+import joblib
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
@@ -6,9 +8,18 @@ from .rules import INTENT_RULES
 from .nlp_preprocess import preprocess
 
 class MLEngine:
-    def __init__(self):
+    def __init__(self, model_path: str = "models/intent_classifier.joblib"):
+        # Jika ada model hasil training yang lebih advanced, gunakan itu.
+        # Jika tidak, baru fallback ke training sederhana dari rules.
+        if os.path.exists(model_path):
+            try:
+                self.model = joblib.load(model_path)
+                return
+            except Exception:
+                pass
+        
         self.model = Pipeline([
-            ('tfidf', TfidfVectorizer(tokenizer=lambda x: preprocess(x), token_pattern=None)),
+            ('tfidf', TfidfVectorizer(tokenizer=lambda x: preprocess(x), token_pattern=None, ngram_range=(1, 2))),
             ('clf', LinearSVC(C=1.0, dual=True))
         ])
         self._train_from_rules()
