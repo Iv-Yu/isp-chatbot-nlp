@@ -48,11 +48,16 @@ class MLEngine:
         # Mendapatkan skor keputusan
         decision_scores = self.model.decision_function([user_input])
         
-        # Normalisasi skor sederhana ke rentang 0-1 (Softmax approximation)
-        exp_scores = np.exp(decision_scores - np.max(decision_scores))
-        probs = exp_scores / exp_scores.sum()
+        # Penanganan khusus jika output berupa array 1D (binary classification)
+        if len(decision_scores.shape) == 1:
+            probs = 1 / (1 + np.exp(-decision_scores))  # Sigmoid
+            max_prob = probs[0] if probs[0] > 0.5 else 1 - probs[0]
+        else:
+            # Normalisasi skor sederhana ke rentang 0-1 (Softmax approximation)
+            exp_scores = np.exp(decision_scores - np.max(decision_scores))
+            probs = exp_scores / exp_scores.sum()
+            max_prob = np.max(probs)
         
-        max_prob = np.max(probs)
         predicted_intent = self.model.predict([user_input])[0]
 
         if max_prob >= threshold_design:

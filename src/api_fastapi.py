@@ -4,6 +4,7 @@ import random
 from collections import Counter, defaultdict
 import secrets
 import mysql.connector
+from mysql.connector import pooling
 from datetime import datetime
 import time
 import logging
@@ -60,15 +61,29 @@ DATA_DIR.mkdir(exist_ok=True)
 
 load_dotenv(BASE_DIR / ".env")
 
+# Inisialisasi Connection Pool
+db_config = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "isp_chatbot"),
+}
+
+try:
+    connection_pool = pooling.MySQLConnectionPool(
+        pool_name="chatbot_pool",
+        pool_size=5,
+        pool_reset_session=True,
+        **db_config
+    )
+except Exception as e:
+    logging.error(f"Gagal membuat connection pool: {e}")
+
 def get_db_connection():
     """Membuat koneksi ke database MySQL XAMPP."""
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "isp_chatbot"),
-        autocommit=True
-    )
+    conn = connection_pool.get_connection()
+    conn.autocommit = True
+    return conn
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "").strip().strip('"').strip("'")
 OUTAGE_ENV_FLAG = "OUTAGE_MODE"
