@@ -1,95 +1,53 @@
-# Chatbot Layanan ISP Berbasis NLP (Rule-based)
+# ISP Chatbot NLP - Hybrid System
 
-## 🎯 Deskripsi Singkat
-Proyek ini merupakan implementasi chatbot layanan pelanggan Internet Service Provider (ISP)
-berbasis Natural Language Processing (NLP) menggunakan pendekatan rule-based.
+Sistem chatbot layanan pelanggan ISP yang menggabungkan kecepatan **Rule Engine**, akurasi statistik **SVM**, dan kecerdasan semantik **SBERT**.
 
-Sistem ini mampu:
-- Mendeteksi intent pelanggan
-- Memberikan jawaban otomatis untuk pertanyaan dasar
-- Mengeskalasi kasus yang kompleks ke Customer Service (CS)
-- Mendeteksi kasus teknis untuk diteruskan ke NOC
+## 🚀 Fitur Utama
+- **Hybrid Intent Classification**:
+    1. **Layer 1 (Rule-based)**: Menggunakan token matching teroptimasi untuk respon instan.
+    2. **Layer 2 (Machine Learning)**: LinearSVC (SVM) dengan probabilitas terkalibrasi.
+    3. **Layer 3 (Semantic Similarity)**: SBERT (`paraphrase-multilingual`) untuk memahami makna kalimat yang kompleks/daerah.
+- **Monitoring Dashboard**: Dashboard analitik berbasis Streamlit untuk memantau distribusi intent, performa engine, matriks evaluasi (Confusion Matrix), dan manajemen eskalasi CS/NOC.
+- **Integrasi SmartOLT**: Pengecekan status perangkat pelanggan (Online, LOS, Power Fail) secara real-time via API.
+- **Telegram Bot Interface**: Mendukung interaksi teks, pengiriman lokasi (coverage check), dan foto (bukti gangguan).
+- **Role Management**: Sistem autentikasi untuk Admin, CS, dan NOC.
 
-Sistem terdiri dari:
-- NLP Engine (normalisasi + rule engine)
-- REST API (FastAPI)
-- CLI untuk demo
-- Endpoint dummy CS & NOC
+## 🛠️ Instalasi & Persiapan
 
----
+1. **Virtual Environment**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # macOS/Linux
+   .\.venv\Scripts\activate   # Windows
+   ```
 
-## 🚀 Cara Menjalankan
+2. **Dependensi**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### 1. Jalankan CLI
+3. **Konfigurasi**:
+   Salin `.env.example` ke `.env` dan isi kredensial Telegram, Database PostgreSQL, dan SmartOLT.
 
+## 💻 Cara Menjalankan
 
-```powershell
-python src/main_cli.py
+### 1. Jalankan API Backend (FastAPI)
+```bash
+uvicorn src.api_fastapi:app --host 127.0.0.1 --port 8931
 ```
 
-
-### 2. Jalankan API Server
-
-
-```powershell
-uvicorn src.api_fastapi:app --reload
+### 2. Jalankan Dashboard Monitoring (Streamlit)
+```bash
+streamlit run src/dashboard.py
 ```
 
-Akses API:
-- POST `/chat` atau `/predict` → mengembalikan `intent`, `confidence`, `status` (AUTO_RESPONSE/TO_CS/TO_NOC), `reply`, dan `entity` (jika terdeteksi)
-- POST `/cs/escalate`
-- POST `/noc/escalate`
+### 3. Jalankan Telegram Bot
+```bash
+python src/telegram_bot.py
+```
 
-Catatan: endpoint eskalasi hanya dummy untuk keperluan tugas (membuat tiket mock di memori, tanpa integrasi eksternal).
-
----
-
-## 🧠 Arsitektur
-
-
-User → Chatbot → NLP Engine → Rules → Response
-↓
-Escalation Router
-(AUTO_RESPONSE / TO_CS / TO_NOC)
-
-
----
-
-## 📄 Fitur Utama
-
-### ✔ NLP Engine
-- Pattern scoring
-- Token matching
-- Threshold scoring
-- Intent detection
-
-### ✔ Sistem Eskalasi (sesuai proposal)
-- AUTO_RESPONSE → chatbot menjawab
-- TO_CS → fallback
-- TO_NOC → gangguan teknis (kabel putus, gangguan)
-
-### ✔ API Endpoints
-- `/chat`
-- `/cs/escalate`
-- `/noc/escalate`
-
----
-
-## 📦 Struktur Folder
-
-
-src/
-chatbot/
-nlp_processor.py
-rule_engine.py
-rules.py
-response_router.py
-main_cli.py
-api_fastapi.py
-
-
----
-
-## 📞 Developer
-Ivan Yusuf Sholy Khudin  
-Teknik Informatika — UNP Kediri
+## 🧠 Training Model ML
+Untuk melatih ulang model SVM berdasarkan dataset terbaru:
+```bash
+python -m src.models.train_intent_model --dataset data/intent_dataset.csv
+```
