@@ -26,15 +26,22 @@
             {"pattern": "internet mati total", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
             {"pattern": "koneksi mati", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
             {"pattern": "wifi mati", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
+            {"pattern": "internet pedot", "response": "Ngapunten sanget kak, internetnya terputus ya? Boleh kirim foto lampu modemnya? Nanti kami bantu cek dari sistem."},
+            {"pattern": "ra iso konek", "response": "Mohon maaf kak, tidak bisa konek ya? Coba matikan modem 5 menit lalu nyalakan lagi. Kalau tetap ra iso, info ID Pelanggan ya."},
+            {"pattern": "wifi trouble", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
+            {"pattern": "internet bermasalah", "response": "Mohon maaf kak, koneksinya bermasalah ya? Boleh diinfokan lampu modemnya warna apa?"},
+            {"pattern": "ada kendala wifi", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
             {"pattern": "wifi ga nyala", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
             {"pattern": "wifi tidak menyediakan internet", "response": "Baik kak, jika WiFi terhubung tapi tidak ada internet, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih sama, mohon kirim foto lampu indikator di modem ya."},
             {"pattern": "ga bisa internetan", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
             {"pattern": "gabisa internetan", "response": "Mohon maaf atas ketidaknyamanannya kak, boleh kirim foto lampu modem/ONT sekarang? Nanti kami bantu cek dari sistem."},
+            {"pattern": "mboten saget internetan", "response": "Ngapunten kak, mboten saget internetan nggih? Coba modem dipateni dilit (5 menit) terus urapke meneh. Kirim foto modem nggih."},
             {"pattern": "koneksi sering putus", "response": "Maaf ya kak, untuk cek gangguannya boleh info ID Pelanggan + kondisi lampu modem (Power, LOS, Internet)?"},
             {"pattern": "putus putus", "response": "Maaf ya kak, untuk cek gangguannya boleh info ID Pelanggan + kondisi lampu modem (Power, LOS, Internet)?"},
             {"pattern": "sering disconnect", "response": "Maaf ya kak, untuk cek gangguannya boleh info ID Pelanggan + kondisi lampu modem (Power, LOS, Internet)?"},
             {"pattern": "modem internet merah", "response": "Baik kak, jika lampu Internet di modem merah, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih merah, mohon infokan ID Pelanggan ya."},
             {"pattern": "lampu internet mati", "response": "Baik kak, jika lampu Internet di modem mati, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih mati, mohon infokan ID Pelanggan ya."},
+            {"pattern": "modeme mati", "response": "Ngapunten kak, modemenya mati total atau lampunya saja? Coba cek adaptornya sudah tercolok kencang belum kak?"},
             {"pattern": "wifi nyala tapi ga ada internet", "response": "Baik kak, jika WiFi terhubung tapi tidak ada internet, coba matikan modem selama 5 menit lalu nyalakan lagi. Jika masih sama, mohon kirim foto lampu indikator di modem ya."},
             {"pattern": "ada ganggu", "response": "Mohon maaf atas ketidaknyamanannya kak. Bisa infokan ID Pelanggan atau nama yang terdaftar dulu? Atas nama siapa ya kak? Nanti kami cek dari sistem."},
             {"pattern": "ganggu", "response": "Mohon maaf atas ketidaknyamanannya kak. Bisa infokan ID Pelanggan atau nama yang terdaftar dulu? Atas nama siapa ya kak? Nanti kami cek dari sistem."},
@@ -47,6 +54,8 @@
         "mappings": [
             {"pattern": "lemot banget", "response": "Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏\n- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)\n- Sejak jam berapa terasa lemot?\n\nKalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"},
             {"pattern": "lemot", "response": "Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏\n- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)\n- Sejak jam berapa terasa lemot?\n\nKalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"},
+            {"pattern": "lemot pol", "response": "Ngapunten sanget kak, lemot banget nggih? Kangge buka nopo mawon kak? Coba kirim screenshot speedtest-nya nggih."},
+            {"pattern": "ngadat", "response": "Mohon maaf kak, koneksinya ngadat ya? Sejak jam berapa kak? Coba kami bantu cek rutenya."},
             {"pattern": "internet lemot", "response": "Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏\n- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)\n- Sejak jam berapa terasa lemot?\n\nKalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"},
             {"pattern": "loading terus", "response": "Maaf kak, bisa dijelaskan lebih detail kendala yang dialami? 🙏\n- Untuk akses apa ya kak? (misal YouTube, TikTok, game, Zoom, dsb)\n- Sejak jam berapa terasa lemot?\n\nKalau boleh, silakan kirim screenshot atau foto kendalanya ya kak 😊"},
         ]
@@ -56,6 +65,8 @@
         "mappings": [
             {"pattern": "kabel putus", "response": "Waduh, kabel putus ya kak. Mohon kirim lokasi lengkap + foto kondisi kabel supaya teknisi bisa langsung cek lapangan."},
             {"pattern": "kabel optik putus", "response": "Waduh, kabel putus ya kak. Mohon kirim lokasi lengkap + foto kondisi kabel supaya teknisi bisa langsung cek lapangan."},
+            {"pattern": "kabel ngglawer", "response": "Matur nuwun infonya kak, kabelnya menjuntai/ngglawer ya? Mohon sharelokasi dan foto kondisinya agar segera diperbaiki tim lapangan."},
+            {"pattern": "kabel pedot", "response": "Waduh kabelnya pedot nggih kak? Nyuwun tulung kirim foto kabel sing pedot kalih alamat lengkap nggih, teknisi meluncur."},
             {"pattern": "tiang roboh", "response": "Terima kasih infonya kak. Untuk kendala tiang roboh, kami butuh lokasi detail agar teknisi bisa dijadwalkan."},
             {"pattern": "tiang tumbang", "response": "Terima kasih infonya kak. Untuk kendala tiang tumbang, kami butuh lokasi detail agar teknisi bisa dijadwalkan."},
             {"pattern": "los merah", "response": "Baik kak, jika lampu LOS merah itu indikasi ada masalah di kabel optik. Mohon kirim ID Pelanggan dan alamat lengkap agar bisa dijadwalkan pengecekan oleh teknisi."},
@@ -84,6 +95,10 @@
             {
                 "pattern": "cek tagihan",
                 "response": "Untuk cek tagihan, silakan kirim ID Pelanggan (misal: OLT4-250012) atau nama yang terdaftar ya kak. Atas nama siapa ya kak?"
+            },
+            {
+                "pattern": "pira tagihane",
+                "response": "Nyuwun tulung infokan ID Pelanggan utawi asmane sing terdaftar nggih kak, kersane kulo cek tagihane."
             },
             {
                 "pattern": "tagihan saya berapa",

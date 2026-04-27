@@ -45,6 +45,13 @@ class RuleEngine:
         2. Di dalam Intent tersebut, cari Pola dengan skor tertinggi untuk mendapatkan Respons.
         """
         processed_tokens = preprocess(user_input)
+        
+        # Jika setelah preprocess kosong, coba gunakan token mentah hasil normalisasi 
+        # (antisipasi kata-kata sapaan yang sangat singkat/slang yang terhapus stopword)
+        if not processed_tokens:
+            from .nlp_preprocess import tokenize
+            processed_tokens = tokenize(user_input)
+            
         if not processed_tokens:
             return "fallback", random.choice(FALLBACK_RESPONSES), "TO_CS"
 
@@ -67,10 +74,19 @@ class RuleEngine:
                 if score > max_score_in_rule:
                     max_score_in_rule = score
             
-            # Jika skor intent ini lebih tinggi dari yang terbaik sejauh ini
-            if max_score_in_rule > highest_intent_score:
-                highest_intent_score = max_score_in_rule
+            # Penalti skor greeting jika ada indikasi pesan lebih panjang dari sekadar salam
+            final_rule_score = max_score_in_rule
+            if rule["name"] == "greeting" and len(processed_tokens) > 1:
+                # Berikan penalti signifikan jika sapaan dibarengi kata lain
+                final_rule_score -= 0.6
+
+            # Pilih intent dengan skor tertinggi. Jika seri, prioritaskan non-greeting.
+            if final_rule_score > highest_intent_score:
+                highest_intent_score = final_rule_score
                 best_intent_rule = rule
+            elif final_rule_score == highest_intent_score and highest_intent_score > 0:
+                if best_intent_rule and best_intent_rule["name"] == "greeting":
+                    best_intent_rule = rule
 
         # Jika tidak ada intent yang cocok sama sekali
         # Jika skor tertinggi tidak mencapai ambang minimal, fallback

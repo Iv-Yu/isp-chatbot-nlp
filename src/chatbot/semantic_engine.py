@@ -1,13 +1,14 @@
 import torch
 from sentence_transformers import SentenceTransformer, util
 from .rules import INTENT_RULES
+from typing import Optional, Tuple
 
 class SemanticEngine:
     def __init__(self, model_name='paraphrase-multilingual-MiniLM-L12-v2'):
         # Model ini mendukung 50+ bahasa termasuk Indonesia
         self.model = SentenceTransformer(model_name)
         self.intent_labels = []
-        self.reference_embeddings = None
+        self.reference_embeddings: Optional[torch.Tensor] = None
         self._prepare_references()
 
     def _prepare_references(self):
@@ -24,22 +25,24 @@ class SemanticEngine:
         # Encode semua pattern menjadi vektor
         self.reference_embeddings = self.model.encode(sentences, convert_to_tensor=True)
 
-    def detect(self, user_input: str, threshold: float = 0.6):
+    def detect(self, user_input: str, threshold: float = 0.6) -> Tuple[Optional[str], float, Optional[str]]:
         """
         Mencari intent berdasarkan kemiripan makna (Cosine Similarity).
         """
-        if not user_input.strip():
-            return None, 0.0
+        if not user_input.strip() or self.reference_embeddings is None:
+            return None, 0.0, None
 
         # Encode input user
         query_embedding = self.model.encode(user_input, convert_to_tensor=True)
         
         # Hitung skor kemiripan dengan semua referensi
-        cosine_scores = util.cos_sim(query_embedding, self.reference_embeddings)[0]
+        # Pastikan kita memberitahu Pylance bahwa ini adalah Tensor yang bisa di-index
+        scores_tensor = util.cos_sim(query_embedding, self.reference_embeddings)
+        cosine_scores = scores_tensor[0]
         
         # Ambil skor tertinggi
-        best_score_idx = torch.argmax(cosine_scores).item()
-        best_score = cosine_scores[best_score_idx].item()
+        best_score_idx = int(torch.argmax(cosine_scores).item())
+        best_score = float(cosine_scores[best_score_idx].item())
         
         if best_score >= threshold:
             intent_name = self.intent_labels[best_score_idx]

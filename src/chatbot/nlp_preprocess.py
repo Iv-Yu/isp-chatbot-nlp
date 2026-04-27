@@ -31,6 +31,21 @@ _EXTRA_STOPWORDS = {
     "deh",
 }
 
+# Kata-kata yang harus dilindungi agar tidak dihapus oleh Sastrawi Stopword Remover
+# karena merupakan pemicu utama intent (Greeting/Complaint)
+_PROTECTED_TOKENS = {
+    "assalamualaikum",
+    "waalaikumsalam",
+    "halo",
+    "hai",
+    "hello",
+    "pagi", "siang", "sore", "malam",
+    "ass", "wr", "wb",
+    "bisa",
+    "mati",
+    "trouble",
+    "rusak"
+}
 
 _CUSTOM_STEM = {
     "mengeluhkan": "eluh",
@@ -61,6 +76,10 @@ def tokenize(text: str) -> List[str]:
 def remove_stopwords(tokens: List[str]) -> List[str]:
     filtered: List[str] = []
     for tok in tokens:
+        # Jangan hapus jika kata tersebut ada dalam daftar proteksi
+        if tok in _PROTECTED_TOKENS:
+            filtered.append(tok)
+            continue
         # Sastrawi stopword remover expects a string; if it returns empty, tok is stopword
         if not _STOPWORD_REMOVER.remove(tok).strip():
             continue

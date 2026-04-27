@@ -9,7 +9,3 @@ class NLPProcessor:
 
     def __call__(self, text: str) -> list[str]:
         return preprocess(text)
-    def __init__(self):
-
-        self.stemmer = _STEMMER
-

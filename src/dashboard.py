@@ -219,6 +219,18 @@ if data:
                 )
                 st.plotly_chart(fig_stacked, use_container_width=True)
 
+                st.divider()
+                st.subheader("Distribusi Engine Keputusan")
+                if "engine_distribution" in data:
+                    df_engine = pd.DataFrame(
+                        list(data["engine_distribution"].items()), 
+                        columns=["Engine", "Count"]
+                    )
+                    fig_engine = px.pie(df_engine, names="Engine", values="Count", 
+                                     title="Proporsi Penggunaan Rule vs AI",
+                                     color_discrete_sequence=px.colors.qualitative.Pastel)
+                    st.plotly_chart(fig_engine, use_container_width=True)
+
                 # Pie Chart untuk Status
                 st.divider()
                 st.subheader("Status Distribusi (Auto vs Escalation)")

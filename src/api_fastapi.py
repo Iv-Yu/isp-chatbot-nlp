@@ -5,12 +5,12 @@ from collections import Counter, defaultdict
 import secrets
 import psycopg2
 from psycopg2 import pool, extras
-from sklearn.metrics import confusion_matrix
 from datetime import datetime
 import time
 import logging
 from contextlib import contextmanager
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_recall_fscore_support
+import numpy as np
 # Tambahkan ini untuk meredam log warning dari transformers
 import warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -41,6 +41,7 @@ _start_time = time.time()
 # Setup logging
 # Penampung statistik intent di memori (reset jika server restart)
 _intent_counts = Counter()
+_engine_counts = Counter()
 
 # Daftar kata kunci yang terlalu umum (ambigu) jika berdiri sendiri
 AMBIGUOUS_KEYWORDS = {"internet", "wifi", "koneksi", "sinyal", "paket", "bayar", "tagihan", "speed", "tes", "cek", "halo", "i", "p", "test"}
@@ -256,6 +257,7 @@ class OutageStatus(BaseModel):
 class StatsResponse(BaseModel):
     intent_distribution: Dict[str, int]
     status_distribution: Dict[str, int]
+    engine_distribution: Dict[str, int]
     intent_status_distribution: Dict[str, Dict[str, int]]
     uptime_seconds: int
     outage_status: OutageStatus
@@ -331,6 +333,7 @@ async def get_admin_stats(_ = Depends(verify_admin_token)):
     return StatsResponse(
         intent_distribution=dict(_intent_counts),
         status_distribution=dict(_status_counts),
+        engine_distribution=dict(_engine_counts),
         intent_status_distribution={k: dict(v) for k, v in _intent_status_counts.items()},
         uptime_seconds=uptime,
         outage_status=OutageStatus(enabled=_OUTAGE_STATE["enabled"], message=_OUTAGE_STATE["message"]),
@@ -422,10 +425,11 @@ async def get_evaluation_matrix(_ = Depends(verify_admin_token)):
                     
                     if r_intent == "fallback":
                         ml_res = ml_engine.predict(msg, threshold_design=0.5)
-                        p_intent = ml_res[0]
+                        # Gunakan pengecekan tipe untuk menghindari error Pylance indexing
+                        p_intent = ml_res[0] if isinstance(ml_res, tuple) and len(ml_res) > 0 else "fallback"
                         if p_intent == "fallback":
                             sem_res = semantic_engine.detect(msg, threshold=0.6)
-                            p_intent = sem_res[0] if sem_res[0] else "fallback"
+                            p_intent = sem_res[0] if isinstance(sem_res, tuple) and len(sem_res) > 0 and sem_res[0] else "fallback"
                     else:
                         p_intent = r_intent
                         
@@ -445,13 +449,18 @@ async def get_evaluation_matrix(_ = Depends(verify_admin_token)):
                     y_true, y_pred, labels=labels, average=None, zero_division=0
                 )
 
+                # Konversi ke list dengan np.atleast_1d untuk menangani Union[float, ndarray] dari sklearn
+                p_list = np.atleast_1d(precision).tolist()
+                r_list = np.atleast_1d(recall).tolist()
+                f_list = np.atleast_1d(f1_score).tolist()
+
                 # Format metrik per-label
                 per_label_metrics = {}
-                for i, label in enumerate(labels):
+                for label, p, r, f in zip(labels, p_list, r_list, f_list):
                     per_label_metrics[label] = {
-                        "precision": round(precision[i], 4),
-                        "recall": round(recall[i], 4),
-                        "f1_score": round(f1_score[i], 4),
+                        "precision": round(float(p), 4),
+                        "recall": round(float(r), 4),
+                        "f1_score": round(float(f), 4),
                     }
                 
                 return {
@@ -544,6 +553,7 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
     rule_intent, rule_reply, status = rule_engine.detect_with_response(message)
     
     intent: str = rule_intent if rule_intent is not None else "fallback"
+    engine_source = "rule_engine"
     base_reply: str = rule_reply if rule_reply is not None else ""
     
     # KUNCI STATUS: Jika sudah eskalasi, jangan biarkan intent baru mereset status ke AUTO_RESPONSE
@@ -567,15 +577,20 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
             ml_threshold = 0.95
         else:
             # Threshold moderat untuk menyeimbangkan false positive
-            ml_threshold = 0.7 if is_short_input else 0.5
+            ml_threshold = 0.6 if is_short_input else 0.4
 
         # Unpack dan pastikan tipe data adalah string untuk menghindari error Pylance
         ml_res = ml_engine.predict(message, threshold_design=ml_threshold)
-        ml_intent_val, ml_score = ml_res[0], ml_res[1]
+        if isinstance(ml_res, tuple) and len(ml_res) == 2:
+            ml_intent_val, ml_score = ml_res
+        else:
+            ml_intent_val = "fallback"
+            ml_score = 0.0
 
         if ml_intent_val is not None and str(ml_intent_val) != "fallback":
             intent = str(ml_intent_val)
-            confidence = float(ml_score)
+            engine_source = "ml_engine"
+            confidence = round(float(ml_score), 4)
             status = route_intent(intent)
             # Ambil respons default dari rules berdasarkan intent hasil ML
             for rule in INTENT_RULES:
@@ -586,26 +601,29 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
             # Layer 3: Semantic Engine (Metode Kesamaan TF-IDF Teroptimasi)
             logger.info(f"MLEngine low confidence, applying Similarity Scoring for: {message}")
             
-            # Jika ambigu, naikkan threshold ke level hampir mustahil (0.98)
+            # Jika input mengandung kata jawa atau mix, semantic seringkali lebih akurat dari ML
             if is_ambiguous:
                 sem_threshold = 0.98
             else:
-                sem_threshold = 0.85 if is_short_input else 0.6
+                sem_threshold = 0.80 if is_short_input else 0.55 # Sedikit diturunkan agar lebih sensitif
                 
             # Gunakan penanganan tuple yang aman untuk menghindari "size mismatch"
             sem_res = semantic_engine.detect(message, threshold=sem_threshold)
-            sem_intent = sem_res[0] if len(sem_res) > 0 else None
-            sem_score = sem_res[1] if len(sem_res) > 1 else 0.0
-            sem_reply = sem_res[2] if len(sem_res) > 2 else ""
+            if isinstance(sem_res, tuple) and len(sem_res) == 3:
+                sem_intent, sem_score, sem_reply = sem_res
+            else:
+                sem_intent, sem_score, sem_reply = None, 0.0, None
 
             if sem_intent is not None:
                 intent = str(sem_intent)
+                engine_source = "semantic_engine"
                 confidence = float(sem_score)
                 base_reply = str(sem_reply)
                 status = route_intent(intent)
             else:
                 # Final Fallback jika semua engine gagal
                 confidence = 0.0
+                engine_source = "fallback"
                 base_reply = random.choice(FALLBACK_RESPONSES)
 
     # --- Tentukan Final Reply, Intent, dan Status ---
@@ -631,6 +649,7 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
             final_reply = f"{time_greet()}! {base_reply}"
 
     _intent_counts[final_intent] += 1
+    _engine_counts[engine_source] += 1
     _status_counts[final_status] += 1
     _intent_status_counts[final_intent][final_status] += 1
 
