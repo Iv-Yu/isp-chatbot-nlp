@@ -2,7 +2,7 @@ import numpy as np
 import joblib
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import LinearSVC
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from .rules import INTENT_RULES
 from .nlp_preprocess import preprocess
@@ -19,8 +19,8 @@ class MLEngine:
                 pass
         
         self.model = Pipeline([
-            ('tfidf', TfidfVectorizer(tokenizer=lambda x: preprocess(x), token_pattern=None, ngram_range=(1, 2))),
-            ('clf', LinearSVC(C=1.0, dual=True))
+            ('tfidf', TfidfVectorizer(tokenizer=lambda x: preprocess(x), token_pattern=None, ngram_range=(1, 2))),  # type: ignore
+            ('clf', MultinomialNB(alpha=0.1))
         ])
         self._train_from_rules()
 
@@ -39,25 +39,15 @@ class MLEngine:
 
     def predict(self, user_input: str, threshold_design: float = 0.4):
         """
-        Prediksi intent. LinearSVC tidak punya predict_proba secara default, 
-        tapi kita bisa menggunakan decision_function untuk estimasi confidence.
+        Prediksi intent menggunakan Multinomial Naive Bayes.
+        Menggunakan predict_proba untuk mendapatkan nilai probabilitas (confidence) asli.
         """
         if not user_input.strip():
             return None, 0.0
 
-        # Mendapatkan skor keputusan
-        decision_scores = self.model.decision_function([user_input])
-        
-        # Penanganan khusus jika output berupa array 1D (binary classification)
-        if len(decision_scores.shape) == 1:
-            probs = 1 / (1 + np.exp(-decision_scores))  # Sigmoid
-            max_prob = probs[0] if probs[0] > 0.5 else 1 - probs[0]
-        else:
-            # Normalisasi skor sederhana ke rentang 0-1 (Softmax approximation)
-            exp_scores = np.exp(decision_scores - np.max(decision_scores))
-            probs = exp_scores / exp_scores.sum()
-            max_prob = np.max(probs)
-        
+        # Mendapatkan probabilitas untuk setiap kelas
+        probs = self.model.predict_proba([user_input])[0]
+        max_prob = np.max(probs)
         predicted_intent = self.model.predict([user_input])[0]
 
         if max_prob >= threshold_design:

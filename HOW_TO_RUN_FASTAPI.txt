@@ -6,7 +6,7 @@ Jika Anda menggunakan virtual environment (sangat disarankan), aktifkan terlebih
 
 Setelah virtual environment aktif (atau jika Anda tidak menggunakannya), jalankan perintah berikut di terminal dari root folder proyek (`d:\isp-chatbot-nlp\`):
 
-`uvicorn src.api_fastapi:app --host 0.0.0.0 --port 8000`
+`uvicorn src.api_fastapi:app --host 127.0.0.1 --port 8931`
 
 Penjelasan perintah:
 - `uvicorn src.api_fastapi:app`: Memberi tahu uvicorn untuk mencari objek aplikasi FastAPI bernama `app` di dalam modul `api_fastapi.py` yang berada di folder `src`.

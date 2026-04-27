@@ -108,7 +108,7 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         response = requests.post(
             CHATBOT_API_URL,
             json={"message": user_text, "chat_id": chat_id, "msg_id": update.message.message_id},
-            timeout=20,
+            timeout=45, # SmartOLT butuh waktu, kita kasih napas lebih panjang
         )
         response.raise_for_status()
         payload = response.json()
@@ -146,13 +146,28 @@ def handle_pending_identity(update: Update, context: CallbackContext, pre_captur
     state["pending"] = None  # Selesaikan aksi 'need_identity'
     state["last_intent"] = "provide_identity"
 
-    update.message.reply_text(f"Baik kak {name_or_id}, datanya kami cek dulu ya 🙏\nMohon tunggu sebentar.")
+    # Kirim konfirmasi awal
+    update.message.reply_text(f"Baik kak {name_or_id}, datanya kami cek dulu di sistem ya 🙏")
+    
+    # Tampilkan indikator mengetik saat menunggu API
+    context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
     try:
-        # Kirim data identitas ke backend (fire-and-forget)
+        # Kirim data identitas ke backend
         payload = {"message": f"__IDENTITY__:{name_or_id}", "chat_id": chat_id, "msg_id": update.message.message_id}
-        requests.post(CHATBOT_API_URL, json=payload, timeout=25) # Tingkatkan timeout agar lebih besar dari SmartOLT API
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=45)
+        response.raise_for_status()
+        
+        # Jeda manusiawi agar tidak terlalu instan (terutama jika "tidak ditemukan")
+        time.sleep(1.5)
+        
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+            
         logger.info(f"Sent identity to API for chat_id {chat_id}")
+    except requests.exceptions.Timeout:
+        update.message.reply_text("Pengecekan SmartOLT memakan waktu lebih lama dari biasanya. Mohon tunggu ya kak...")
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not send IDENTITY info for chat_id {chat_id}: {e}")
 
@@ -181,7 +196,13 @@ def handle_location(update: Update, context: CallbackContext) -> None:
     try:
         # Kirim data lokasi ke backend
         payload = {"message": f"__LOCATION__:{loc_text}", "chat_id": chat_id, "msg_id": update.message.message_id if not location else None}
-        requests.post(CHATBOT_API_URL, json=payload, timeout=25) # Tingkatkan timeout
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=25)
+        response.raise_for_status()
+
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+
         logger.info(f"Sent location to API for chat_id {chat_id}")
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not send LOCATION info for chat_id {chat_id}: {e}")
@@ -198,7 +219,13 @@ def handle_photo(update: Update, context: CallbackContext) -> None:
     try:
         # Kirim sinyal ke API bahwa ada foto yang dikirim
         payload = {"message": "__PHOTO_SENT__", "chat_id": chat_id}
-        requests.post(CHATBOT_API_URL, json=payload, timeout=20) # Tingkatkan timeout
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=20)
+        response.raise_for_status()
+
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+
         logger.info(f"Sent photo notification to API for chat_id {chat_id}")
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not send PHOTO info for chat_id {chat_id}: {e}")
@@ -259,14 +286,22 @@ def process_pending_queue(update: Update, context: CallbackContext):
 
 def main() -> None:
     """Fungsi utama untuk menjalankan bot."""
-    updater = Updater(TELEGRAM_TOKEN, use_context=True)
+    if not TELEGRAM_TOKEN:
+        logger.error("TELEGRAM_TOKEN tidak tersedia. Bot tidak bisa dijalankan.")
+        return
+
+    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
     dp = updater.dispatcher
 
-    # Tambahkan handler
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-    dp.add_handler(MessageHandler(Filters.location, handle_location))
-    dp.add_handler(MessageHandler(Filters.photo | Filters.document, handle_photo))
+    if dp is not None:
+        # Tambahkan handler
+        dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+        dp.add_handler(MessageHandler(Filters.location, handle_location))
+        dp.add_handler(MessageHandler(Filters.photo | Filters.document, handle_photo))
+    else:
+        logger.error("Dispatcher tidak terinisialisasi.")
+        return
 
     # Mulai bot
     try:

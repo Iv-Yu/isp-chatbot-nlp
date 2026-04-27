@@ -1,10 +1,18 @@
-# Abaikan file environment yang berisi secret
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Environment variables
 .env
 
-# Abaikan direktori cache Python
-__pycache__/
-*.pyc
-
-# Abaikan file yang dihasilkan oleh IDE
+# IDEs
 .vscode/
 .idea/
+
+# Data & Logs
+logs/*.log
+*.csv

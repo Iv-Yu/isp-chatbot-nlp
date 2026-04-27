@@ -11,12 +11,13 @@ try:
     from streamlit_autorefresh import st_autorefresh
     HAS_AUTOREFRESH = True
 except ImportError:
+    st_autorefresh = None
     HAS_AUTOREFRESH = False
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=True)
 
-API_BASE_URL = "https://overturn-outsell-eligibly.ngrok-free.dev"
+API_BASE_URL = "http://127.0.0.1:8931"
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 
 st.set_page_config(page_title="ISP Chatbot Monitoring", layout="wide")
@@ -27,6 +28,10 @@ st.sidebar.header("Konfigurasi")
 # --- Sistem Login Sederhana ---
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
+    st.session_state["username"] = ""
+    st.session_state["role"] = ""
+    st.session_state["menu_choice"] = "📈 Analitik Intent"
+    st.session_state["eval_data"] = None
 
 if not st.session_state["logged_in"]:
     with st.form("login_form"):
@@ -52,7 +57,8 @@ if not st.session_state["logged_in"]:
                     elif r.status_code == 401:
                         st.error("❌ Username atau Password salah. Silakan coba lagi.")
                     elif r.status_code == 500:
-                        st.error("❌ Terjadi kesalahan internal pada database server.")
+                        detail = r.json().get("detail", "Terjadi kesalahan internal pada database server.")
+                        st.error(f"❌ {detail}")
                     else:
                         st.error(f"❌ Error {r.status_code}: Gagal menghubungi server login.")
                 except requests.exceptions.ConnectionError:
@@ -98,6 +104,16 @@ def fetch_chat_history(chat_id):
         return []
     except Exception:
         return []
+
+def fetch_evaluation_matrix():
+    headers = {"x-admin-token": ADMIN_TOKEN}
+    try:
+        r = requests.get(f"{API_BASE_URL}/admin/evaluation-matrix", headers=headers, timeout=10)
+        if r.status_code == 200:
+            return r.json()
+        return None
+    except Exception:
+        return None
 
 if not ADMIN_TOKEN:
     st.sidebar.error("⚠️ ADMIN_TOKEN belum diatur")
@@ -172,17 +188,18 @@ if data:
     st.divider()
 
     # Row 2: Charts
-    tabs = ["📈 Analitik Intent", "📋 Log Eskalasi"]
+    menu_options = ["📈 Analitik Intent", "📋 Log Eskalasi"]
     if st.session_state["role"] == "admin":
-        tabs += ["⚙️ Manajemen Sistem"]
+        menu_options += ["⚙️ Manajemen Sistem"]
     
-    tab_objs = st.tabs(tabs)
+    # Gunakan Sidebar untuk Navigasi agar posisi tidak reset saat rerun
+    choice = st.sidebar.radio("Navigasi Menu", menu_options, key="menu_choice")
     
-    # Mapping tab berdasarkan role agar tidak salah index
-    tab_map = {name: obj for name, obj in zip(tabs, tab_objs)}
-    
-    if "📈 Analitik Intent" in tab_map:
-        with tab_map["📈 Analitik Intent"]:
+    # --- Konten Berdasarkan Pilihan Menu ---
+
+    if choice == "📈 Analitik Intent":
+        st.container()
+        with st.container():
             st.subheader("Analisis Performa Intent")
             if data["intent_status_distribution"]:
                 # Menyiapkan data untuk Stacked Bar Chart
@@ -217,17 +234,21 @@ if data:
             else:
                 st.info("Menunggu data interaksi pertama...")
 
-    with tab_map["📋 Log Eskalasi"]:
+    elif choice == "📋 Log Eskalasi":
         st.subheader("💬 Antrean Chat & Eskalasi")
         role = st.session_state["role"]
         
         if data["recent_escalations"]:
-            # Filter berdasarkan active_statuses yang dikirim API
+            # Implementasi Logic Eskalasi Berbasis Peran (Bab 4)
             filtered_esc = data["recent_escalations"]
             if role == "noc":
-                filtered_esc = [e for e in filtered_esc if "TO_NOC" in (e.get("active_statuses") or "")]
+                filtered_esc = [e for e in filtered_esc if e.get("status") in ["TO_NOC", "STAFF_REPLY"]]
+                st.caption("🔍 Menampilkan antrean teknis (NOC)")
             elif role == "cs":
-                filtered_esc = [e for e in filtered_esc if "TO_CS" in (e.get("active_statuses") or "")]
+                filtered_esc = [e for e in filtered_esc if e.get("status") in ["TO_CS", "STAFF_REPLY"]]
+                st.caption("🔍 Menampilkan antrean layanan & admin (CS)")
+            else:
+                st.caption("🔍 Menampilkan seluruh antrean sistem (Admin)")
 
             for i, esc in enumerate(filtered_esc):
                 conf_score = esc.get('confidence', 1.0)
@@ -268,40 +289,43 @@ if data:
                         else:
                             st.info("💡 Klik tombol ↩️ untuk membalas pesan spesifik.")
                         
-                        # Gunakan chat_id sebagai key agar input tidak hilang saat refresh
-                        reply_text = st.text_area("Tulis balasan...", key=f"reply_input_{esc['chat_id']}")
-                        
-                        col_btn1, col_btn2 = st.columns(2)
-                        if col_btn1.button("📤 Kirim Balasan", key=f"btn_send_{esc['chat_id']}", use_container_width=True):
-                            if reply_text:
-                                if send_reply(esc['chat_id'], reply_text, target_msg_id):
-                                    st.success("Berhasil mengirim balasan!")
-                                    if f"reply_target_{esc['chat_id']}" in st.session_state:
-                                        del st.session_state[f"reply_target_{esc['chat_id']}"]
-                                    if f"reply_text_preview_{esc['chat_id']}" in st.session_state:
-                                        del st.session_state[f"reply_text_preview_{esc['chat_id']}"]
-                                    # Clear the text area after sending
-                                    st.session_state[f"reply_input_{esc['chat_id']}"] = ""
+                        # --- Form Balas Pesan ---
+                        with st.form(key=f"reply_form_{esc['chat_id']}", clear_on_submit=True):
+                            # Gunakan chat_id sebagai key agar input tidak hilang saat refresh
+                            # Ubah key agar unik di dalam form
+                            reply_text = st.text_area("Tulis balasan...", key=f"reply_input_{esc['chat_id']}_form")
+                            
+                            col_btn1, col_btn2 = st.columns(2)
+                            submit_button = col_btn1.form_submit_button("📤 Kirim Balasan", use_container_width=True)
+                            resolve_button = col_btn2.form_submit_button("✅ Selesaikan Chat", use_container_width=True)
+
+                            if submit_button:
+                                if reply_text:
+                                    if send_reply(esc['chat_id'], reply_text, target_msg_id):
+                                        st.success("Berhasil mengirim balasan!")
+                                        # Hapus state terkait target balasan jika ada
+                                        if f"reply_target_{esc['chat_id']}" in st.session_state:
+                                            del st.session_state[f"reply_target_{esc['chat_id']}"]
+                                        if f"reply_text_preview_{esc['chat_id']}" in st.session_state:
+                                            del st.session_state[f"reply_text_preview_{esc['chat_id']}"]
+                                        time.sleep(1)
+                                        st.rerun()
+                                    else:
+                                        st.error("Gagal mengirim balasan.")
+                                else:
+                                    st.warning("Pesan balasan tidak boleh kosong.")
+                            
+                            if resolve_button:
+                                if resolve_chat(esc['chat_id']):
+                                    st.success("Sesi chat berhasil diselesaikan.")
                                     time.sleep(1)
                                     st.rerun()
-                                else:
-                                    st.error("Gagal mengirim balasan.")
-                            else:
-                                st.warning("Pesan balasan tidak boleh kosong.")
-                        
-                        if col_btn2.button("✅ Selesaikan Chat", key=f"btn_resolve_{esc['chat_id']}", use_container_width=True):
-                            if resolve_chat(esc['chat_id']):
-                                st.success("Sesi chat berhasil diselesaikan.")
-                                time.sleep(1)
-                                st.rerun()
                     else:
                         st.warning("Chat ID tidak tersedia untuk membalas secara manual.")
-
         else:
             st.info("Belum ada chat yang dialihkan ke CS atau NOC.")
 
-    if "⚙️ Manajemen Sistem" in tab_map:
-        with tab_map["⚙️ Manajemen Sistem"]:
+    elif choice == "⚙️ Manajemen Sistem":
             st.subheader("Pusat Kendali")
             with st.container(border=True):
                 st.write("### 🚨 Mode Gangguan Massal")
@@ -332,6 +356,52 @@ if data:
                         st.warning("Username dan password tidak boleh kosong.")
 
             st.divider()
+            st.subheader("🧪 Matriks Evaluasi (Confusion Matrix)")
+            if st.button("Generate Confusion Matrix"):
+                st.session_state["eval_data"] = fetch_evaluation_matrix()
+            
+            # Tampilkan matrix jika data ada di session state
+            if st.session_state["eval_data"]:
+                eval_data = st.session_state["eval_data"]
+                df_cm = pd.DataFrame(
+                    eval_data["matrix"], 
+                    index=eval_data["labels"], 
+                    columns=eval_data["labels"]
+                )
+                
+                fig_cm = px.imshow(
+                    df_cm,
+                    text_auto=True,
+                    aspect="auto",
+                    labels=dict(x="Prediksi Sistem", y="Label Sebenarnya", color="Jumlah"),
+                    x=eval_data["labels"],
+                    y=eval_data["labels"],
+                    color_continuous_scale='RdBu_r'
+                )
+                st.plotly_chart(fig_cm, use_container_width=True)
+                
+                # Menampilkan Ringkasan Metrik (Pindahkan ke dalam blok IF)
+                summary = eval_data.get("summary", {})
+                col_acc, col_total = st.columns(2)
+                accuracy_pct = summary.get("overall_accuracy", 0) * 100
+                col_acc.metric("Overall Accuracy", f"{accuracy_pct:.2f}%")
+                col_total.metric("Total Sampel Evaluasi", f"{summary.get('total', 0)} Chat")
+
+                st.write("### 📋 Detail Metrik per Intent")
+                metrics_dict = summary.get("per_label_metrics", {})
+                if metrics_dict:
+                    # Mengonversi dictionary metrik ke DataFrame untuk tabel
+                    df_metrics = pd.DataFrame.from_dict(metrics_dict, orient='index')
+                    df_metrics.columns = ["Precision", "Recall", "F1-Score"]
+                    st.dataframe(df_metrics.style.format("{:.4f}"), use_container_width=True)
+                else:
+                    st.warning("Detail metrik per label tidak tersedia.")
+                
+                st.info(f"**Algoritma:** {summary.get('algorithm')}")
+            elif st.session_state["eval_data"] is False:
+                st.warning("Data tidak mencukupi untuk membuat matrix. Pastikan bot sudah memiliki riwayat percakapan.")
+
+            st.divider()
             st.subheader("📥 Data Training")
             all_logs_data = fetch_all_logs()
             if all_logs_data:
@@ -349,7 +419,7 @@ if data:
 
     # Script untuk auto-refresh sederhana
     if auto_refresh:
-        if HAS_AUTOREFRESH:
+        if st_autorefresh is not None:
             # Refresh setiap 30 detik tanpa efek flicker/gelap-terang
             st_autorefresh(interval=30000, key="datarefresh")
         else:
