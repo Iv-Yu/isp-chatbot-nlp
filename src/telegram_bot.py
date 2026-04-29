@@ -84,6 +84,18 @@ def handle_message(update: Update, context: CallbackContext) -> None:
     if pending_action == "need_location":
         handle_pending_location(update, context)
         return
+    if pending_action == "need_package":
+        handle_pending_package(update, context)
+        return
+    if pending_action == "need_nik":
+        handle_pending_nik(update, context)
+        return
+    if pending_action == "need_phone":
+        handle_pending_phone(update, context)
+        return
+    if pending_action == "need_email":
+        handle_pending_email(update, context)
+        return
 
     # =====================================================
     # 2. Regex untuk menangkap ID Pelanggan atau nama
@@ -136,6 +148,105 @@ def handle_message(update: Update, context: CallbackContext) -> None:
     except Exception:
         logger.error("An unexpected error occurred in handle_message", exc_info=True)
         update.message.reply_text("Maaf kak, terjadi kesalahan internal. Tim kami sedang menanganinya.")
+
+def handle_pending_package(update: Update, context: CallbackContext):
+    """Menangani pemilihan paket dari user."""
+    chat_id = update.message.chat_id
+    state = get_state(chat_id)
+    package_choice = update.message.text.strip()
+
+    state["pending"] = None
+    state["last_intent"] = "provide_package"
+
+    context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+
+    try:
+        payload = {"message": f"__PACKAGE_SELECTED__:{package_choice}", "chat_id": chat_id, "msg_id": update.message.message_id}
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=20)
+        response.raise_for_status()
+        
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+            
+    except Exception as e:
+        logger.warning(f"Error sending PACKAGE selection: {e}")
+
+    process_pending_queue(update, context)
+
+def handle_pending_nik(update: Update, context: CallbackContext):
+    """Menangani input NIK dari user."""
+    chat_id = update.message.chat_id
+    state = get_state(chat_id)
+    nik = update.message.text.strip()
+
+    state["pending"] = None
+    state["last_intent"] = "provide_nik"
+
+    context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+
+    try:
+        payload = {"message": f"__NIK__:{nik}", "chat_id": chat_id, "msg_id": update.message.message_id}
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=20)
+        response.raise_for_status()
+        
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+            
+    except Exception as e:
+        logger.warning(f"Error sending NIK: {e}")
+
+    process_pending_queue(update, context)
+
+def handle_pending_phone(update: Update, context: CallbackContext):
+    """Menangani input nomor HP aktif dari user."""
+    chat_id = update.message.chat_id
+    state = get_state(chat_id)
+    phone = update.message.text.strip()
+
+    state["pending"] = None
+    state["last_intent"] = "provide_phone"
+
+    context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+
+    try:
+        payload = {"message": f"__PHONE__:{phone}", "chat_id": chat_id, "msg_id": update.message.message_id}
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=20)
+        response.raise_for_status()
+        
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+            
+    except Exception as e:
+        logger.warning(f"Error sending phone number: {e}")
+
+    process_pending_queue(update, context)
+
+def handle_pending_email(update: Update, context: CallbackContext):
+    """Menangani input email aktif dari user."""
+    chat_id = update.message.chat_id
+    state = get_state(chat_id)
+    email = update.message.text.strip()
+
+    state["pending"] = None
+    state["last_intent"] = "provide_email"
+
+    context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+
+    try:
+        payload = {"message": f"__EMAIL__:{email}", "chat_id": chat_id, "msg_id": update.message.message_id}
+        response = requests.post(CHATBOT_API_URL, json=payload, timeout=20)
+        response.raise_for_status()
+        
+        api_data = response.json()
+        if api_data.get("reply"):
+            update.message.reply_text(api_data.get("reply"))
+    except Exception as e:
+        logger.warning(f"Error sending email: {e}")
+
+    process_pending_queue(update, context)
 
 def handle_pending_identity(update: Update, context: CallbackContext, pre_captured_id: Optional[str] = None):
     """Menangani pesan yang dianggap sebagai identitas (nama/ID)."""
@@ -244,6 +355,10 @@ def check_and_queue_pending_actions(state: dict, reply_text: str, intent: Option
     # Kumpulan kata kunci untuk deteksi
     identity_keywords = ["id pelanggan", "nomor pelanggan", "nama terdaftar"]
     location_keywords = ["alamat", "lokasi", "share lokasi", "pin point"]
+    package_keywords = ["pilih paket", "paket yang mana", "tertarik paket"]
+    nik_keywords = ["nik", "nomor ktp"] # Tambahkan kata kunci untuk NIK
+    phone_keywords = ["nomor hp", "hp aktif", "whatsapp"] # Tambahkan kata kunci untuk Nomor HP
+    email_keywords = ["email", "email aktif"] # Tambahkan kata kunci untuk Email
 
     # Aturan berdasarkan intent
     if intent in ("gangguan_umum", "cek_tagihan", "berhenti_langganan"):
@@ -254,12 +369,24 @@ def check_and_queue_pending_actions(state: dict, reply_text: str, intent: Option
             pending_fields.append("need_location")
 
     # Aturan berdasarkan kata kunci di balasan
-    if any(k in text_low for k in identity_keywords):
+    if intent != "provide_identity" and any(k in text_low for k in identity_keywords):
         if "need_identity" not in pending_fields:
             pending_fields.append("need_identity")
-    if any(k in text_low for k in location_keywords):
+    if intent != "provide_location" and any(k in text_low for k in location_keywords):
         if "need_location" not in pending_fields:
             pending_fields.append("need_location")
+    if intent != "provide_package" and any(k in text_low for k in package_keywords):
+        if "need_package" not in pending_fields:
+            pending_fields.append("need_package")
+    if intent != "provide_nik" and any(k in text_low for k in nik_keywords):
+        if "need_nik" not in pending_fields:
+            pending_fields.append("need_nik")
+    if intent != "provide_phone" and any(k in text_low for k in phone_keywords):
+        if "need_phone" not in pending_fields:
+            pending_fields.append("need_phone")
+    if intent != "provide_email" and any(k in text_low for k in email_keywords):
+        if "need_email" not in pending_fields:
+            pending_fields.append("need_email")
 
     # Tambahkan ke antrian jika ada
     if pending_fields:
@@ -283,6 +410,14 @@ def process_pending_queue(update: Update, context: CallbackContext):
             update.message.reply_text("Boleh minta alamat lengkap atau share lokasinya kak? 🙏")
         elif next_action == "need_identity":
             update.message.reply_text("Boleh diinfokan ID Pelanggan atau nama lengkap yang terdaftar kak? 🙏")
+        elif next_action == "need_package":
+             pass # Respon sudah diberikan oleh rules.py
+        elif next_action == "need_nik":
+            update.message.reply_text("Boleh diinfokan NIK kakak sesuai KTP? 🙏")
+        elif next_action == "need_phone":
+            update.message.reply_text("Boleh diinfokan nomor HP aktif yang bisa dihubungi? 🙏")
+        elif next_action == "need_email":
+            update.message.reply_text("Boleh diinfokan alamat email aktif kakak? 🙏")
 
 def main() -> None:
     """Fungsi utama untuk menjalankan bot."""

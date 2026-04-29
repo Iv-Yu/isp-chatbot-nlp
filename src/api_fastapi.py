@@ -3,12 +3,14 @@ import os
 import random
 from collections import Counter, defaultdict
 import secrets
+import re
 import psycopg2
 from psycopg2 import pool, extras
 from datetime import datetime
 import time
 import logging
 from contextlib import contextmanager
+import requests
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_recall_fscore_support
 import numpy as np
 # Tambahkan ini untuk meredam log warning dari transformers
@@ -25,7 +27,7 @@ except Exception:
 from pathlib import Path
 from typing import Optional, Dict, List
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Form, Request
 from pydantic import BaseModel
 from .chatbot.rule_engine import RuleEngine
 from .chatbot.rules import INTENT_RULES, FALLBACK_RESPONSES
@@ -146,6 +148,12 @@ def init_db():
             
     except Exception as e:
         logger.error(f"Gagal inisialisasi PostgreSQL: {e}")
+
+# State management sederhana untuk Fonnte (WhatsApp)
+# Untuk produksi, disarankan menggunakan Redis atau database
+FONNTE_USER_STATE: Dict[str, dict] = {}
+FONNTE_TOKEN = os.getenv("FONNTE_TOKEN", "").strip()
+FONNTE_API_URL = "https://api.fonnte.com/send"
 
 def _is_chat_escalated(chat_id: Optional[int]) -> bool:
     """Checks if the chat's latest status is an escalation status."""
@@ -277,6 +285,14 @@ class UserCreateRequest(BaseModel):
     username: str
     password: str
     role: str
+
+class FonnteWebhook(BaseModel):
+    sender: str
+    message: str
+    name: Optional[str] = None
+    location: Optional[str] = None
+    image: Optional[str] = None
+
 
 _OUTAGE_STATE = {
     "enabled": os.getenv(OUTAGE_ENV_FLAG, "").lower() in {"1", "true", "on"},
@@ -477,13 +493,169 @@ async def get_evaluation_matrix(_ = Depends(verify_admin_token)):
         logger.error(f"Error generating matrix: {e}")
         raise HTTPException(status_code=500, detail="Gagal menghitung matrix.")
 
+@app.post("/webhook/fonnte", tags=["Webhook"])
+async def fonnte_webhook(
+    request: Request,
+    sender: str = Form(None),
+    message: str = Form(None),
+    data: Optional[FonnteWebhook] = None
+):
+    """
+    Webhook endpoint cerdas untuk WhatsApp via Fonnte.
+    Mendukung format Form Data, JSON, dan debugging data mentah.
+    """
+    if not FONNTE_TOKEN:
+        logger.error("FONNTE_TOKEN belum dikonfigurasi.")
+        raise HTTPException(status_code=500, detail="Server token misconfigured")
+
+    # 1. Coba ambil dari Form Data (Mendukung Teks dan Share Location dari Fonnte)
+    current_sender = sender
+    current_message = message
+    
+    # Jika Fonnte mengirimkan share location (latitude,longitude)
+    raw_location = data.location if data else None
+    if not current_message and raw_location:
+        current_message = raw_location
+
+    # 2. Jika Form kosong, coba parsing body manual (antisipasi variasi Content-Type)
+    if not current_sender or not current_message:
+        try:
+            # Cek apakah body berisi JSON
+            raw_json = await request.json()
+
+            # Handle Fonnte status/state update (bukan pesan chat)
+            if raw_json and ("state" in raw_json or "stateid" in raw_json):
+                logger.info(f"Fonnte status update ignored for device: {raw_json.get('device')}")
+                return {"status": "ok", "detail": "state update ignored"}
+
+            current_sender = raw_json.get("sender")
+            # Gunakan message jika ada, jika tidak cek field location
+            current_message = raw_json.get("message") or raw_json.get("location")
+            if current_sender and current_message:
+                logger.info("Data Fonnte berhasil diambil dari JSON body")
+        except:
+            pass
+
+    if data and not current_sender:
+        current_sender = data.sender
+        current_message = data.message or data.location
+
+    if not current_sender or not current_message:
+        raw_body = await request.body()
+        logger.warning(f"Webhook diterima tapi data tidak lengkap. Sender: {current_sender}, Msg: {current_message}. Raw Body: {raw_body.decode()}")
+        return {"status": "ignored", "reason": "missing_data"}
+
+    msg_text = current_message.strip()
+    
+    # Inisialisasi state user jika belum ada
+    if current_sender not in FONNTE_USER_STATE:
+        FONNTE_USER_STATE[current_sender] = {"pending": None, "queue": []}
+    state = FONNTE_USER_STATE[current_sender]
+
+    def send_reply(text: str):
+        try:
+            res = requests.post(FONNTE_API_URL, headers={"Authorization": FONNTE_TOKEN}, 
+                          data={"target": current_sender, "message": text, "delay": "2"}, timeout=10)
+            logger.info(f"Fonnte API Response to {current_sender}: {res.status_code} - {res.text}")
+        except Exception as e:
+            logger.error(f"Gagal mengirim balik ke Fonnte: {e}")
+
+    try:
+        # 1. Logika Pending Action (Slot Filling)
+        if state["pending"] == "need_identity":
+            state["pending"] = None
+            msg_text = f"__IDENTITY__:{msg_text}"
+        elif state["pending"] == "need_package":
+            state["pending"] = None
+            msg_text = f"__PACKAGE_SELECTED__:{msg_text}"
+        elif state["pending"] == "need_nik":
+            state["pending"] = None
+            msg_text = f"__NIK__:{msg_text}"
+        elif state["pending"] == "need_phone":
+            state["pending"] = None
+            msg_text = f"__PHONE__:{msg_text}"
+        elif state["pending"] == "need_email":
+            state["pending"] = None
+            msg_text = f"__EMAIL__:{msg_text}"
+        # Jika sedang menunggu lokasi, atau input mengandung koordinat (Share Location)
+        elif state["pending"] == "need_location" or re.search(r"^-?\d+\.\d+,\s*-?\d+\.\d+$", msg_text):
+            state["pending"] = None
+            msg_text = f"__LOCATION__:{msg_text}"
+
+        # 2. Logika Regex Capturing (Otomatis deteksi ID Pelanggan)
+        # Mirip dengan handle_message di telegram_bot.py
+        if not msg_text.startswith("__"):
+            id_match = re.search(r"\bolt\d+-\d+\b", msg_text, flags=re.I)
+            if id_match:
+                send_reply(f"Baik kak {id_match.group(0)}, datanya kami cek dulu ya 🙏")
+                msg_text = f"__IDENTITY__:{id_match.group(0)}"
+
+        # 3. Jalankan Prediksi NLP
+        chat_id_int = int(current_sender) if current_sender.isdigit() else None
+        result = _predict(msg_text, chat_id=chat_id_int)
+
+        # 4. Analisis balasan untuk antrean informasi lanjutan
+        # (Porting logika dari check_and_queue_pending_actions)
+        res_low = result.reply.lower()
+        
+        # Logic Slot Filling untuk Paket
+        if any(k in res_low for k in ["pilih paket", "paket yang mana", "tertarik paket"]):
+            if "need_package" not in state["queue"]: state["queue"].append("need_package")
+            # Setelah paket dipilih, langsung antrekan permintaan data lainnya
+            if "need_nik" not in state["queue"]: state["queue"].append("need_nik")
+            if "need_phone" not in state["queue"]: state["queue"].append("need_phone")
+            if "need_email" not in state["queue"]: state["queue"].append("need_email")
+
+        # Logic Slot Filling untuk Identitas
+        if result.intent != "provide_identity" and any(k in res_low for k in ["id pelanggan", "nomor pelanggan", "id anda"]):
+            if "need_identity" not in state["queue"]: state["queue"].append("need_identity")
+            
+        # Logic Slot Filling untuk Lokasi
+        if result.intent not in ["provide_location", "provide_identity"] and any(k in res_low for k in ["alamat", "lokasi", "share lokasi", "pin point"]):
+            if "need_location" not in state["queue"]: state["queue"].append("need_location")
+
+        # 5. Kirim balasan utama
+        send_reply(result.reply)
+
+        # 6. Proses Antrean (Minta input selanjutnya jika ada)
+        if not state["pending"] and state["queue"]:
+            next_action = state["queue"].pop(0)
+            state["pending"] = next_action
+            
+            if next_action == "need_identity":
+                send_reply("Boleh diinfokan ID Pelanggan atau nama lengkap yang terdaftar kak? 🙏")
+            elif next_action == "need_location":
+                send_reply("Boleh minta alamat lengkap atau share lokasinya kak? 🙏")
+            elif next_action == "need_nik":
+                send_reply("Boleh diinfokan NIK kakak sesuai KTP? 🙏")
+            elif next_action == "need_phone":
+                send_reply("Boleh diinfokan nomor HP aktif yang bisa dihubungi? 🙏")
+            elif next_action == "need_email":
+                send_reply("Boleh diinfokan alamat email aktif kakak? 🙏")
+            elif next_action == "need_package":
+                # Opsional: Jika ingin mengirim pesan tambahan saat meminta paket
+                pass
+
+        return {"status": "success", "intent": result.intent}
+
+    except Exception as e:
+        logger.error(f"Fonnte Webhook Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 async def health_check():
     return {"status": "ok"}
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "POST"])
 async def root():
     """Root endpoint to verify the API is running."""
-    return {"message": "ISP Chatbot Intent API is running. Send POST requests to /chat"}
+    return {
+        "message": "ISP Chatbot Intent API is running.",
+        "endpoints": {
+            "telegram_webhook": "/chat",
+            "whatsapp_fonnte_webhook": "/webhook/fonnte"
+        }
+    }
 
 def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] = None) -> ChatResponse:
     """
@@ -508,7 +680,7 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
         
         status = current_status if is_escalated else "AUTO_RESPONSE"
         
-        # Ambil status perangkat menggunakan modul SmartOLT yang sudah kita buat
+        # Ambil status perangkat menggunakan modul SmartOLT
         smartolt_reply_part = smart_olt_client.get_customer_device_status(identity_val)
         logger.info(f"SmartOLT Integration: Respon untuk {identity_val} -> {smartolt_reply_part}")
 
@@ -521,7 +693,51 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
         _save_to_db(message, "provide_identity", status, final_identity_reply, chat_id, 1.0, msg_id)
         _log_escalation(chat_id, f"📌 ID: {identity_val}", "provide_identity", status, 1.0)
         return ChatResponse(intent="provide_identity", confidence=1.0, status=status, reply=final_identity_reply)
+
+    if message.startswith("__PACKAGE_SELECTED__:"):
+        pkg_val = message.replace("__PACKAGE_SELECTED__:", "").strip()
+        _intent_counts["provide_package"] += 1
+        status = current_status if is_escalated else "AUTO_RESPONSE"
+        
+        _status_counts[status] += 1
+        _intent_status_counts["provide_package"][status] += 1
+        reply_pkg = f"Siap kak, pilihan paket {pkg_val} sudah kami catat. Sekarang boleh bantu kirimkan lokasi pemasangannya (Share Location) ya kak? 🙏"
+        _save_to_db(message, "provide_package", status, reply_pkg, chat_id, 1.0, msg_id)
+        return ChatResponse(intent="provide_package", confidence=1.0, status=status, reply=reply_pkg)
     
+    if message.startswith("__NIK__:"):
+        nik_val = message.replace("__NIK__:", "").strip()
+        _intent_counts["provide_nik"] += 1
+        status = current_status if is_escalated else "AUTO_RESPONSE"
+        
+        _status_counts[status] += 1
+        _intent_status_counts["provide_nik"][status] += 1
+        reply_nik = "Terima kasih, NIK kakak sudah kami catat."
+        _save_to_db(message, "provide_nik", status, reply_nik, chat_id, 1.0, msg_id)
+        return ChatResponse(intent="provide_nik", confidence=1.0, status=status, reply=reply_nik)
+
+    if message.startswith("__PHONE__:"):
+        phone_val = message.replace("__PHONE__:", "").strip()
+        _intent_counts["provide_phone"] += 1
+        status = current_status if is_escalated else "AUTO_RESPONSE"
+        
+        _status_counts[status] += 1
+        _intent_status_counts["provide_phone"][status] += 1
+        reply_phone = "Terima kasih, nomor HP aktif kakak sudah kami catat."
+        _save_to_db(message, "provide_phone", status, reply_phone, chat_id, 1.0, msg_id)
+        return ChatResponse(intent="provide_phone", confidence=1.0, status=status, reply=reply_phone)
+
+    if message.startswith("__EMAIL__:"):
+        email_val = message.replace("__EMAIL__:", "").strip()
+        _intent_counts["provide_email"] += 1
+        status = current_status if is_escalated else "AUTO_RESPONSE"
+        
+        _status_counts[status] += 1
+        _intent_status_counts["provide_email"][status] += 1
+        reply_email = "Terima kasih, alamat email aktif kakak sudah kami catat."
+        _save_to_db(message, "provide_email", status, reply_email, chat_id, 1.0, msg_id)
+        return ChatResponse(intent="provide_email", confidence=1.0, status=status, reply=reply_email)
+
     if message.startswith("__LOCATION__:"):
         loc_val = message.replace("__LOCATION__:", "")
         _intent_counts["provide_location"] += 1
@@ -530,9 +746,9 @@ def _predict(message: str, chat_id: Optional[int] = None, msg_id: Optional[int] 
         _status_counts[status] += 1
         _intent_status_counts["provide_location"][status] += 1
         logger.info(f"Protocol LOCATION received for chat_id: {chat_id}")
-        _save_to_db(message, "provide_location", status, "Lokasi berhasil dipetakan.", chat_id, 1.0, msg_id)
+        _save_to_db(message, "provide_location", status, "Lokasi berhasil diterima.", chat_id, 1.0, msg_id)
         _log_escalation(chat_id, f"📍 Lokasi: {loc_val[:50]}", "provide_location", status, 1.0)
-        return ChatResponse(intent="provide_location", confidence=1.0, status=status, reply="Lokasi berhasil dipetakan.")
+        return ChatResponse(intent="provide_location", confidence=1.0, status=status, reply="Lokasi berhasil diterima kak, kami lampirkan ke laporan ya 🙏.")
 
     # Handle Protocol Foto/Screenshot
     if message == "__PHOTO_SENT__":
@@ -750,29 +966,67 @@ async def get_all_logs(_ = Depends(verify_admin_token)):
 
 @app.post("/admin/reply-chat", tags=["Admin"])
 async def reply_to_user(req: ReplyRequest, _ = Depends(verify_admin_token)):
-    """Mengirim balasan manual dari staff ke Telegram user."""
+    """Mengirim balasan manual dari staff ke Telegram user atau WhatsApp (Fonnte)."""
+
+    # Deteksi Platform berdasarkan chat_id.
+    # Heuristik: ID Telegram user saat ini < 10^10. Nomor WA (IDN 628...) > 10^11.
+    is_whatsapp = req.chat_id > 10_000_000_000
+
+    if is_whatsapp:
+        if not FONNTE_TOKEN:
+            raise HTTPException(status_code=500, detail="Fonnte token tidak dikonfigurasi")
+        
+        # WhatsApp (Fonnte) mendukung format *bold*
+        formatted_reply = f"*🧑‍💻 Staf ({req.staff_name}) membalas:*\n\n{req.reply_message}"
+        
+        try:
+            res = requests.post(
+                FONNTE_API_URL,
+                headers={"Authorization": FONNTE_TOKEN},
+                data={
+                    "target": str(req.chat_id),
+                    "message": formatted_reply,
+                    "delay": "2"
+                },
+                timeout=15
+            )
+            if res.status_code == 200:
+                _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "STAFF_REPLY", 
+                            formatted_reply, req.chat_id, 1.0, None)
+                return {"status": "sent", "platform": "whatsapp"}
+            
+            logger.error(f"Fonnte Error: {res.status_code} - {res.text}")
+            raise HTTPException(status_code=400, detail=f"Gagal kirim WhatsApp: {res.text}")
+        except Exception as e:
+            logger.error(f"WhatsApp Reply Exception: {e}")
+            raise HTTPException(status_code=500, detail=f"Koneksi Fonnte Error: {str(e)}")
+
+    # Logic Telegram
     if not TELEGRAM_TOKEN:
         raise HTTPException(status_code=500, detail="Bot token tidak dikonfigurasi")
     
-    import requests as py_requests
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     
-    # Menambahkan identitas staf pada pesan agar user tahu dibalas oleh manusia
-    formatted_reply = f"🧑‍💻 *Staf ({req.staff_name}) membalas:*\n\n{req.reply_message}"
-    
-    payload = {"chat_id": req.chat_id, "text": formatted_reply, "parse_mode": "Markdown"}
+    # Gunakan HTML parse mode agar lebih aman terhadap karakter spesial dibanding Markdown
+    safe_name = req.staff_name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    safe_msg = req.reply_message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    formatted_reply_html = f"🧑‍💻 <b>Staf ({safe_name}) membalas:</b>\n\n{safe_msg}"
+
+    payload = {"chat_id": req.chat_id, "text": formatted_reply_html, "parse_mode": "HTML"}
+
     # Gunakan fitur reply asli Telegram jika msg_id tersedia
     if req.reply_to_msg_id:
         payload["reply_to_message_id"] = int(req.reply_to_msg_id)
         
-    res = py_requests.post(url, json=payload)
+    res = requests.post(url, json=payload, timeout=15)
     if res.status_code == 200:
-        # Ubah status menjadi 'STAFF_REPLY' agar log percakapan tidak langsung hilang dari dashboard
-        # Sertakan juga msg_id asal yang dibalas agar tersimpan di database
         _save_to_db(f"MANUAL_REPLY_FROM_{req.staff_name}", "manual_response", "STAFF_REPLY", 
-                    formatted_reply, req.chat_id, 1.0, req.reply_to_msg_id)
+                    formatted_reply_html, req.chat_id, 1.0, req.reply_to_msg_id)
         return {"status": "sent"}
-    raise HTTPException(status_code=400, detail="Gagal mengirim pesan ke Telegram")
+
+    logger.error(f"Telegram API Error: {res.status_code} - {res.text}")
+    error_detail = res.json().get("description", "Gagal mengirim pesan ke Telegram")
+    raise HTTPException(status_code=400, detail=f"Telegram Error: {error_detail}")
 
 @app.post("/admin/resolve-chat", tags=["Admin"])
 async def resolve_chat(req: Dict, _ = Depends(verify_admin_token)):
